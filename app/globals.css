@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: dark; }
+body { background: radial-gradient(1200px 600px at 70% -10%, #1b1538 0%, #0a0a12 55%); }
+.card { @apply bg-panel border border-edge rounded-xl; }
+.btn { @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 font-medium transition; }
+.btn-primary { @apply btn bg-accent text-white hover:opacity-90; }
+.btn-ghost { @apply btn border border-edge text-gray-200 hover:bg-edge/40; }
+.tag { @apply text-xs px-2 py-0.5 rounded-full border border-edge text-gray-300; }
