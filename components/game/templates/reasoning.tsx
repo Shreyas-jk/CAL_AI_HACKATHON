@@ -1,7 +1,12 @@
-"use client";
-import { useMemo, useState, useCallback } from "react";
+﻿"use client";
+import { useMemo, useState, useCallback, type ReactNode } from "react";
 import type { PaperArtifact } from "@/lib/types";
 import GameFrame from "../GameFrame";
+import { DndContext, useDraggable, useDroppable, pointerWithin, type DragEndEvent } from "@dnd-kit/core";
+
+
+
+
 
 type Room = "A" | "B" | "C";
 const ROOMS: Room[] = ["A", "B", "C"];
@@ -73,6 +78,123 @@ interface Attempt { id: number; schedule: Schedule; passed: number; }
 type Verifier = "off" | "final" | "step";
 type Voting = "off" | "majority" | "weighted";
 
+type PStatus = "ok" | "bad" | "pending";
+function checkPartial(p: Partial<Schedule>): { id: string; text: string; status: PStatus }[] {
+  const at = (k: Session) => p[k];
+  const both = (...ks: Session[]) => ks.every((k) => p[k]);
+  const res: { id: string; text: string; status: PStatus }[] = [];
+  const push = (id: string, text: string, ready: boolean, ok: boolean) =>
+    res.push({ id, text, status: ready ? (ok ? "ok" : "bad") : "pending" });
+  push("keynote", "Keynote at 10 AM", !!at("Keynote"), !!at("Keynote") && at("Keynote")!.slot === 0);
+  push("robB", "Robotics lab in GPU Lab (Room B)", !!at("Robotics lab"), !!at("Robotics lab") && at("Robotics lab")!.room === "B");
+  push("ragAg", "RAG & Agents not same time", both("RAG workshop", "Agents workshop"), both("RAG workshop", "Agents workshop") && at("RAG workshop")!.slot !== at("Agents workshop")!.slot);
+  push("safety", "Safety after Agents", both("Safety workshop", "Agents workshop"), both("Safety workshop", "Agents workshop") && at("Safety workshop")!.slot > at("Agents workshop")!.slot);
+  push("mmC", "Multimodal not in Room C", !!at("Multimodal workshop"), !!at("Multimodal workshop") && at("Multimodal workshop")!.room !== "C");
+  const bViol = SESSIONS.some((k) => p[k] && p[k]!.room === "B" && p[k]!.slot === 3);
+  push("bSlot", "Room B unavailable after 1 PM", true, !bViol);
+  push("robMM", "Robotics after Multimodal", both("Robotics lab", "Multimodal workshop"), both("Robotics lab", "Multimodal workshop") && at("Robotics lab")!.slot > at("Multimodal workshop")!.slot);
+  const seen = new Set<string>(); let clash = false;
+  for (const k of SESSIONS) { const c = p[k]; if (c) { const key = c.room + ":" + c.slot; if (seen.has(key)) { clash = true; break; } seen.add(key); } }
+  push("noClash", "No room double-booked", true, !clash);
+  return res;
+}
+
+function DraggableCard({ id, label }: { id: string; label: string }) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id });
+  const style = transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` } : undefined;
+  return (
+    <button ref={setNodeRef} style={style} {...listeners} {...attributes}
+      className={"px-2.5 py-1.5 rounded-md text-xs font-medium border cursor-grab active:cursor-grabbing select-none touch-none " + (isDragging ? "border-accent bg-accent/30 text-white shadow-lg" : "border-edge bg-white/5 text-gray-200 hover:border-accent2")}>
+      {label}
+    </button>
+  );
+}
+
+function DroppableCell({ id, children, disabled }: { id: string; children?: ReactNode; disabled?: boolean }) {
+  const { setNodeRef, isOver } = useDroppable({ id, disabled });
+  return (
+    <td ref={setNodeRef}
+      className={"border border-edge h-12 text-center align-middle transition-colors " + (disabled ? "bg-edge/30 text-gray-600 text-[10px]" : isOver ? "bg-accent/20" : "bg-black/20")}>
+      {disabled ? "unavailable" : children}
+    </td>
+  );
+}
+
+function Tray({ items }: { items: Session[] }) {
+  const { setNodeRef, isOver } = useDroppable({ id: "tray" });
+  return (
+    <div ref={setNodeRef} className={"min-h-[44px] rounded-md border border-dashed p-2 flex flex-wrap gap-2 " + (isOver ? "border-accent bg-accent/10" : "border-edge")}>
+      {items.length ? items.map((s) => <DraggableCard key={s} id={s} label={SHORT[s]} />) : <span className="text-xs text-gray-600 self-center">All sessions placed ✓</span>}
+    </div>
+  );
+}
+
+function PlayerBoard() {
+  const [placed, setPlaced] = useState<Partial<Schedule>>({});
+  const trayItems = SESSIONS.filter((s) => !placed[s]);
+  const cons = checkPartial(placed);
+  const passed = cons.filter((c) => c.status === "ok").length;
+  const won = passed === 8;
+  const onDragEnd = (e: DragEndEvent) => {
+    const sess = e.active.id as Session;
+    const over = e.over?.id as string | undefined;
+    if (!over) return;
+    if (over === "tray") { setPlaced((p) => { const n = { ...p }; delete n[sess]; return n; }); return; }
+    const parts = over.split(":"); const room = parts[1] as Room; const slot = Number(parts[2]);
+    if (room === "B" && slot === 3) return;
+    setPlaced((p) => {
+      const n: Partial<Schedule> = { ...p };
+      for (const k of SESSIONS) if (n[k] && n[k]!.room === room && n[k]!.slot === slot) delete n[k];
+      n[sess] = { room, slot };
+      return n;
+    });
+  };
+  const sessionInCell = (room: Room, slot: number): Session | undefined =>
+    SESSIONS.find((s) => placed[s] && placed[s]!.room === room && placed[s]!.slot === slot);
+  return (
+    <DndContext collisionDetection={pointerWithin} onDragEnd={onDragEnd}>
+      <div className="card p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="font-semibold text-accent2 text-sm">🎮 Your turn — schedule it yourself first</div>
+          <div className="flex items-center gap-3">
+            <span className={"text-sm font-semibold " + (won ? "text-good" : "text-gray-300")}>{passed}/8 rules</span>
+            <button onClick={() => setPlaced({})} className="text-xs px-2 py-1 rounded border border-edge text-gray-400 hover:text-white">Reset my board</button>
+          </div>
+        </div>
+        <p className="text-xs text-gray-400">Drag each session into a room &amp; time slot. Rules check live as you drop. Get all 8 → you win. (Then watch the AI solve the same puzzle below.)</p>
+        <Tray items={trayItems} />
+        <table className="w-full text-xs border-collapse">
+          <thead><tr><th className="text-left text-gray-500 font-normal p-1">Room \\ Slot</th>{SLOTS.map((sl) => <th key={sl} className="text-gray-400 font-normal p-1">{sl}</th>)}</tr></thead>
+          <tbody>
+            {ROOMS.map((room) => (
+              <tr key={room}>
+                <td className="text-gray-300 p-1 whitespace-nowrap">{ROOM_NAME[room]}</td>
+                {SLOTS.map((_, slot) => {
+                  const disabled = room === "B" && slot === 3;
+                  const occ = sessionInCell(room, slot);
+                  return (
+                    <DroppableCell key={room + slot} id={"cell:" + room + ":" + slot} disabled={disabled}>
+                      {occ ? <DraggableCard id={occ} label={SHORT[occ]} /> : null}
+                    </DroppableCell>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {won && <div className="text-sm text-good bg-good/10 rounded p-2">🎉 You solved it! All 8 constraints satisfied. Now see how the AI reasons through the same puzzle below.</div>}
+        <div className="grid sm:grid-cols-2 gap-1.5">
+          {cons.map((c) => (
+            <div key={c.id} className={"flex items-center gap-1.5 text-xs " + (c.status === "ok" ? "text-good" : c.status === "bad" ? "text-bad" : "text-gray-500")}>
+              <span>{c.status === "ok" ? "✓" : c.status === "bad" ? "✗" : "○"}</span><span>{c.text}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </DndContext>
+  );
+}
+
 export default function Reasoning({ game }: { game: PaperArtifact["game"] }) {
   const [usePowerup, setUsePowerup] = useState(false);
   const [attempts, setAttempts] = useState(1);
@@ -139,6 +261,12 @@ export default function Reasoning({ game }: { game: PaperArtifact["game"] }) {
           <li>Switch to <span className="text-good">⚡ Best-of-N + Verifier + Voting</span>: the AI tries many schedules, scores them, and votes — and finds a valid plan.</li>
           <li>Use the panel on the right to change how hard the AI &quot;thinks&quot;, and watch the score react.</li>
         </ol>
+      </div>
+      <PlayerBoard />
+      <div className="flex items-center gap-3 pt-1">
+        <div className="h-px flex-1 bg-edge" />
+        <span className="text-xs text-gray-400 font-medium">Now watch the AI reason →</span>
+        <div className="h-px flex-1 bg-edge" />
       </div>
       <div className="grid lg:grid-cols-3 gap-5">
         <div className="lg:col-span-2 space-y-4">
