@@ -1,5 +1,6 @@
 import { getArtifact } from "@/lib/store";
 import { mockArtifact } from "@/lib/mockData";
+import { mockReasoning } from "@/lib/mockData";
 import Explanation from "@/components/Explanation";
 import ConceptMap from "@/components/ConceptMap";
 import GameRouter from "@/components/game/GameRouter";
@@ -8,7 +9,8 @@ export const dynamic = "force-dynamic";
 
 export default async function ResultPage({ params }: { params: { id: string } }) {
   // fall back to a themed demo artifact if the id isn't in the store (e.g. /result/demo)
-  const artifact = (await getArtifact(params.id)) || mockArtifact(params.id);
+  const artifact = (await getArtifact(params.id))
+    || (params.id.startsWith("demo-reasoning") ? mockReasoning(params.id) : mockArtifact(params.id));
 
   return (
     <div className="space-y-8">
