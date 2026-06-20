@@ -1,4 +1,5 @@
 import Upload from "@/components/Upload";
+import DevGameTester from "@/components/DevGameTester";
 
 export default function Home() {
   return (
@@ -15,6 +16,8 @@ export default function Home() {
       </section>
 
       <Upload />
+
+      <DevGameTester />
 
       <section className="grid md:grid-cols-3 gap-4">
         {[
