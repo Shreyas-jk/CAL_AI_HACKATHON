@@ -129,6 +129,17 @@ export default function Reasoning({ game }: { game: PaperArtifact["game"] }) {
       status={status as any}
       onReset={() => setRunId((r) => r + 1)}
     >
+      <div className="space-y-5">
+      <div className="card p-4 border-accent/30 bg-accent/5 space-y-2 text-sm">
+        <div className="font-semibold text-accent2">How this works — and what to do</div>
+        <p className="text-gray-300">This puzzle shows the big idea behind <span className="text-white">reasoning / chain-of-thought</span> papers: instead of answering instantly, an AI that <span className="text-white">thinks step-by-step, tries several times, and checks its work</span> can solve hard problems that a single quick guess gets wrong.</p>
+        <ol className="list-decimal list-inside text-gray-400 space-y-0.5">
+          <li>Goal: place all 6 sessions on the grid so every rule (checklist under the board) is satisfied — that's <span className="text-white">8/8</span>.</li>
+          <li>Start on <span className="text-bad">Single-shot</span>: one quick attempt. It usually breaks a rule and loses.</li>
+          <li>Switch to <span className="text-good">⚡ Best-of-N + Verifier + Voting</span>: the AI tries many schedules, scores them, and votes — and finds a valid plan.</li>
+          <li>Use the panel on the right to change how hard the AI &quot;thinks&quot;, and watch the score react.</li>
+        </ol>
+      </div>
       <div className="grid lg:grid-cols-3 gap-5">
         <div className="lg:col-span-2 space-y-4">
           <div className="overflow-x-auto">
@@ -156,6 +167,12 @@ export default function Reasoning({ game }: { game: PaperArtifact["game"] }) {
               </tbody>
             </table>
           </div>
+          <div className={"text-xs rounded-md p-2 leading-snug " + (result.selected.passed === 8 ? "bg-good/10 text-good" : "bg-bad/10 text-bad")}>
+            {result.selected.passed === 8
+              ? "Solved! Sampling several schedules, scoring them with the verifier, and voting found a plan that passes all 8 rules — that is the paper's core idea: more thinking at answer-time leads to better reasoning."
+              : "This selected attempt breaks " + (8 - result.selected.passed) + " rule(s). Switch to the powerup, raise Attempts, or turn on the Verifier so the AI can think harder and check its work."}
+          </div>
+          <div className="text-xs text-gray-500">Rules — the AI must satisfy all of these:</div>
           <div className="grid sm:grid-cols-2 gap-1.5">
             {cons.map((c) => (
               <div key={c.id} className={"text-xs flex items-center gap-2 " + (c.ok ? "text-good" : "text-bad")}>
@@ -170,12 +187,14 @@ export default function Reasoning({ game }: { game: PaperArtifact["game"] }) {
             <div>
               <div className="flex justify-between text-gray-300"><span>Attempts</span><span className="text-accent2">{attempts}</span></div>
               <input type="range" min={1} max={10} value={attempts} onChange={(e) => { setAttempts(Number(e.target.value)); setRunId((r) => r + 1); }} className="w-full" />
+              <p className="text-[10px] text-gray-500 leading-snug">How many schedules the AI samples. More attempts = better odds of finding a valid one.</p>
             </div>
-            <Seg label="Verifier" value={verifier} opts={[["off", "Off"], ["final", "Final"], ["step", "Step-by-step"]]} onChange={(v) => { setVerifier(v as Verifier); setRunId((r) => r + 1); }} />
-            <Seg label="Voting" value={voting} opts={[["off", "Off"], ["majority", "Majority"], ["weighted", "Verifier-weighted"]]} onChange={(v) => { setVoting(v as Voting); setRunId((r) => r + 1); }} />
+            <Seg label="Verifier" value={verifier} opts={[["off", "Off"], ["final", "Final"], ["step", "Step-by-step"]]} onChange={(v) => { setVerifier(v as Verifier); setRunId((r) => r + 1); }} hint="A checker that scores each attempt. Final = check the finished schedule. Step-by-step = check every placement (more thorough, costs more compute)." />
+            <Seg label="Voting" value={voting} opts={[["off", "Off"], ["majority", "Majority"], ["weighted", "Verifier-weighted"]]} onChange={(v) => { setVoting(v as Voting); setRunId((r) => r + 1); }} hint="How the final answer is picked from all attempts. Majority = the most common schedule. Verifier-weighted = the attempt the verifier scored highest." />
             <div>
               <div className="flex justify-between text-gray-300"><span>Compute budget</span><span className="text-accent2">{budget}</span></div>
               <input type="range" min={5} max={60} step={5} value={budget} onChange={(e) => { setBudget(Number(e.target.value)); setRunId((r) => r + 1); }} className="w-full" />
+              <p className="text-[10px] text-gray-500 leading-snug">Total &quot;thinking&quot; allowed at answer-time. Each attempt and each check costs compute; if you run out, extra attempts are skipped (clamped).</p>
             </div>
             <div className="flex justify-between text-gray-500"><span>Hints</span><span>None</span></div>
             <button className="btn-primary w-full py-1.5" onClick={() => setRunId((r) => r + 1)}>Run reasoning ▸</button>
@@ -197,11 +216,12 @@ export default function Reasoning({ game }: { game: PaperArtifact["game"] }) {
           </div>
         </div>
       </div>
+      </div>
     </GameFrame>
   );
 }
 
-function Seg({ label, value, opts, onChange }: { label: string; value: string; opts: [string, string][]; onChange: (v: string) => void; }) {
+function Seg({ label, value, opts, onChange, hint }: { label: string; value: string; opts: [string, string][]; onChange: (v: string) => void; hint?: string; }) {
   return (
     <div>
       <div className="text-gray-300 mb-1">{label}</div>
@@ -211,6 +231,7 @@ function Seg({ label, value, opts, onChange }: { label: string; value: string; o
             className={"flex-1 px-1.5 py-1 rounded text-[11px] border " + (value === v ? "bg-accent/30 border-accent text-white" : "border-edge text-gray-400")}>{t}</button>
         ))}
       </div>
+      {hint ? <p className="text-[10px] text-gray-500 mt-1 leading-snug">{hint}</p> : null}
     </div>
   );
 }
