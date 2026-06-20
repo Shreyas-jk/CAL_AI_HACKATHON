@@ -1,17 +1,19 @@
 import type { GameTemplateId } from "./types";
-
 export interface TemplateMeta {
   id: GameTemplateId;
   title: string;
-  categories: string[]; // paper categories that map here
+  categories: string[];
   blurb: string;
   fullyPlayable: boolean;
 }
-
 export const TEMPLATES: TemplateMeta[] = [
   { id: "pathfinding", title: "Maze Runner (A* vs naive search)",
     categories: ["pathfinding", "planning", "search", "graph"],
     blurb: "Navigate a maze under a step budget. Naive BFS burns out; the paper's heuristic finds the goal.",
+    fullyPlayable: true },
+  { id: "fine-tuning-alignment", title: "The Leash (policy drift vs reward hacking)",
+    categories: ["fine-tuning", "alignment", "rlhf", "dpo", "preference", "reward model", "policy optimization", "reinforcement learning from human feedback"],
+    blurb: "Drag how much the policy can drift from base behavior. Too little and nothing changes; too much and it reward-hacks into gibberish.",
     fullyPlayable: true },
   { id: "attention", title: "Spotlight (uniform vs learned attention)",
     categories: ["attention", "transformer", "nlp", "sequence"],
@@ -26,7 +28,6 @@ export const TEMPLATES: TemplateMeta[] = [
     blurb: "Set interventions to keep infections under threshold. A strategy mini-game.",
     fullyPlayable: false },
 ];
-
 export function pickTemplate(category: string): GameTemplateId {
   const c = (category || "").toLowerCase();
   for (const t of TEMPLATES) if (t.categories.some((k) => c.includes(k))) return t.id;

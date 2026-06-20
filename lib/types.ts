@@ -1,9 +1,7 @@
 export type GameTemplateId =
-  | "pathfinding" | "attention" | "gridworld-rl" | "epidemic" | "none";
-
+  | "pathfinding" | "attention" | "gridworld-rl" | "epidemic" | "fine-tuning-alignment" | "none";
 export interface ConceptNode { id: string; label: string; group?: string; }
 export interface ConceptEdge { source: string; target: string; label?: string; }
-
 export interface PaperArtifact {
   id: string;
   title: string;
@@ -14,11 +12,11 @@ export interface PaperArtifact {
   concept: { nodes: ConceptNode[]; edges: ConceptEdge[] };
   game: {
     template: GameTemplateId;
-    confidence: number;     // 0..1 classification confidence
-    goal: string;           // what the player must achieve
-    baselineLabel: string;  // naive / pre-paper tool
-    powerupLabel: string;   // the paper's method as power-up
-    claim: string;          // before/after claim tied to the paper
+    confidence: number;
+    goal: string;
+    baselineLabel: string;
+    powerupLabel: string;
+    claim: string;
     params: Record<string, number | string>;
   };
   eval: { faithfulness: number; hallucinationRisk: number; note: string };
