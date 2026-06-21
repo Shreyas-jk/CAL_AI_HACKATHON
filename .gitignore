@@ -6,3 +6,5 @@ out
 *.log
 .DS_Store
 *.tsbuildinfo
+# regenerable offline-only embeddings (2.2MB) — not shipped, rebuild via `npm run precompute:rag`
+lib/games/rag/data/corpus.json
