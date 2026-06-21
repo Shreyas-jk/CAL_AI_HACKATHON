@@ -31,6 +31,10 @@ export const TEMPLATES: TemplateMeta[] = [
     categories: ["reasoning", "chain-of-thought", "chain of thought", "cot", "test-time", "planning", "constraint"],
     blurb: "Solve a 6-session scheduling puzzle. A single sample fails; best-of-N + verifier + voting under a compute budget finds the 8/8 solution.",
     fullyPlayable: true },
+  { id: "vision-detective", title: "Vision Detective (grounded VLM lab)",
+    categories: ["multimodal", "vision-language", "vision language", "vlm", "vqa", "clip", "ocr", "document understanding", "grounding", "visual hallucination"],
+    blurb: "Interrogate a vision-language model with yes/no questions, then ground answers in visual evidence before it hallucinates.",
+    fullyPlayable: true },
 ];
 export function pickTemplate(category: string): GameTemplateId {
   const c = (category || "").toLowerCase();

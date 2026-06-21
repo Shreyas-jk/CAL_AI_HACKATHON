@@ -6,7 +6,7 @@ import { mockArtifact } from "./mockData";
 import type { PaperArtifact, GameTemplateId } from "./types";
 
 const SYS_EXTRACT = "You convert research-paper text into JSON only: {title, category, oneLiner, summary}. category is a short lowercase phrase.";
-const SYS_CLASSIFY = "Pick a game template id from: pathfinding|attention|gridworld-rl|epidemic|none. JSON only: {template, confidence, goal, baselineLabel, powerupLabel, claim, params}.";
+const SYS_CLASSIFY = "Pick a game template id from: pathfinding|attention|gridworld-rl|epidemic|vision-detective|none. Use vision-detective for multimodal vision-language, VQA, OCR/document understanding, CLIP-style image-text, grounding, or visual hallucination papers. JSON only: {template, confidence, goal, baselineLabel, powerupLabel, claim, params}.";
 const SYS_EXPLAIN = "JSON only: {plainEnglish: string[4-6], concept:{nodes:[{id,label,group}], edges:[{source,target,label}]}}.";
 
 export async function buildArtifact(id: string, rawText: string, fallbackTitle?: string): Promise<PaperArtifact> {
