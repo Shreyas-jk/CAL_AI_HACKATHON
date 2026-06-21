@@ -38,6 +38,46 @@ export interface EpidemicContent {
   spreadContext: string;
 }
 
+const ne = (v: unknown): v is string => typeof v === "string" && v.trim().length > 0;
+const strArrLen = (v: unknown, len: number): boolean =>
+  Array.isArray(v) && v.length === len && v.every(ne);
+
+/**
+ * Strict per-template check that customizeGame's output actually fills the
+ * crafted mechanic's content (not thin/garbage). When this passes, the crafted
+ * template renders parameterized to the paper; when it fails, the pipeline falls
+ * back to a generic GameSpec. Keyed on the contentSchema in templateSpecs.ts.
+ */
+export function isValidCraftedContent(template: GameTemplateId, content: unknown): boolean {
+  if (!content || typeof content !== "object" || Array.isArray(content)) return false;
+  const c = content as Record<string, unknown>;
+  switch (template) {
+    case "attention": {
+      const s = c.sentences;
+      if (!Array.isArray(s) || s.length < 2) return false;
+      return s.every((x: any) =>
+        x && Array.isArray(x.tokens) && x.tokens.length >= 2 && x.tokens.every((t: unknown) => typeof t === "string") &&
+        typeof x.answer === "number" && x.answer >= 0 && x.answer < x.tokens.length && ne(x.explanation));
+    }
+    case "fine-tuning-alignment": {
+      const ex = c.outputExamples as { low?: unknown; sweet?: unknown; high?: unknown } | undefined;
+      return ne(c.contextDescription) && ne(c.curveLabel) && !!ex && ne(ex.low) && ne(ex.sweet) && ne(ex.high);
+    }
+    case "reasoning":
+      return ne(c.theme) && strArrLen(c.sessionNames, 6) && strArrLen(c.roomNames, 3) && strArrLen(c.slotLabels, 4);
+    case "vision-detective":
+      return ne(c.investigationContext) && strArrLen(c.caseLessons, 3);
+    case "pathfinding":
+      return ne(c.scenarioContext) && ne(c.heuristicDescription);
+    case "gridworld-rl":
+      return ne(c.hazardType) && ne(c.rewardDescription);
+    case "epidemic":
+      return ne(c.spreadContext);
+    default:
+      return false;
+  }
+}
+
 function buildCustomizePrompt(
   template: GameTemplateId,
   summary: string,

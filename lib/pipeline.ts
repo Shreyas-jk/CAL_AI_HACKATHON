@@ -3,7 +3,8 @@ import { askJson, hasChatLLM } from "./claude";
 import { chunkSections } from "./chunk";
 import { pickTemplate } from "./templates";
 import { scoreEval, logToArize, logGameSpecEval } from "./arize";
-import { customizeGame } from "./customize";
+import { customizeGame, isValidCraftedContent } from "./customize";
+import { getTemplateSpec } from "./templateSpecs";
 import { generateGameSpec } from "./generateGameSpec";
 import { isValidGameSpec } from "./gameSpec";
 import { mockArtifact } from "./mockData";
@@ -107,9 +108,24 @@ export async function buildArtifact(id: string, rawText: string, fallbackTitle?:
       ? (cl.template as GameTemplateId) : null;
     const template: GameTemplateId = proposed && proposed !== "none" ? proposed : pickTemplate(category);
 
-    let content = await generateGameSpec(summary, category, methodText);
-    if (!isValidGameSpec(content)) {
-      content = await customizeGame(template, summary, category, methodText);
+    // Generator priority (fix a): templates with a crafted mechanic get crafted
+    // content FIRST; only if it's thin/invalid do they fall back to a generic
+    // GameSpec. Templates with no crafted mechanic go straight to the generic spec.
+    // (GameRouter dispatches on content shape — crafted content is never a valid
+    // GameSpec, so it renders the crafted switch; a generic GameSpec renders
+    // DynamicGame. The decision lives here, not in the router.)
+    let content: Record<string, unknown> = {};
+    if (getTemplateSpec(template)) {
+      const crafted = await customizeGame(template, summary, category, methodText);
+      if (isValidCraftedContent(template, crafted)) {
+        content = crafted;
+      } else {
+        const generic = await generateGameSpec(summary, category, methodText);
+        if (isValidGameSpec(generic)) content = generic;
+      }
+    } else {
+      const generic = await generateGameSpec(summary, category, methodText);
+      if (isValidGameSpec(generic)) content = generic;
     }
 
     const plainEnglish = coercePlainEnglish(exp.plainEnglish);
