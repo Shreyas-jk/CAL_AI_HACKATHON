@@ -11,15 +11,19 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
+    "@react-three/drei": "^9.122.0",
+    "@react-three/fiber": "^8.18.0",
     "next": "^14.2.33",
     "openai": "^4.73.0",
     "pdf-parse": "^1.1.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "redis": "^4.7.0"
+    "redis": "^4.7.0",
+    "three": "^0.169.0"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",
+    "@types/three": "^0.169.0",
     "dotenv": "^16.4.5",
     "tsx": "^4.19.2",
     "@types/react": "^18.3.3",
