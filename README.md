@@ -20,8 +20,9 @@ Cal Hacks AI Hackathon 2026 (track: *Ddoski's Lab*).
 | Flatten It (intervention strategy) | epidemic / spread | ▶ playable shell |
 | Vision Detective (grounded VLM lab) | multimodal / vision-language / OCR / grounding | ✅ fully playable |
 
-New templates: add a component under `components/game/templates/`, register it in
-`lib/templates.ts`, and route it in `components/game/GameRouter.tsx`.
+**Adding a game?** See **[CONTRIBUTING.md](./CONTRIBUTING.md)** — the wiring guide, the two
+patterns (decoupled `/dev/<engine>` vs. fully-wired upload flow), and the **additive-only
+rule** for shared files that keeps merges conflict-free.
 
 ## Architecture
 - **Next.js (App Router) + TypeScript + Tailwind**
