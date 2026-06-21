@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 
-const MODEL = process.env.ANTHROPIC_MODEL || "claude-3-5-sonnet-latest";
+const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6";
 
 export function hasClaude(): boolean { return !!process.env.ANTHROPIC_API_KEY; }
 
@@ -11,11 +11,11 @@ function getClient(): Anthropic {
 }
 
 // Ask Claude and parse a JSON object out of the response. Throws if no key.
-export async function askJson<T>(system: string, user: string): Promise<T> {
+export async function askJson<T>(system: string, user: string, maxTokens?: number): Promise<T> {
   if (!hasClaude()) throw new Error("ANTHROPIC_API_KEY not set");
   const msg = await getClient().messages.create({
     model: MODEL,
-    max_tokens: 2000,
+    max_tokens: maxTokens ?? 2000,
     system,
     messages: [{ role: "user", content: user }],
   });

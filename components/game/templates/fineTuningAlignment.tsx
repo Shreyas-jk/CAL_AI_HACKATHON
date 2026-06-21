@@ -3,24 +3,36 @@ import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import GameFrame from "../GameFrame";
 import type { PaperArtifact } from "@/lib/types";
 
-const BASE_SENTENCE = "The assistant gives a clear, accurate, and honest answer.";
-const EAGER_SUFFIXES = ["", " Definitely.", " Trust me on this!", " 100% guaranteed!!!"];
-const REWARD_BAIT = [
+const DEFAULT_BASE = "The assistant gives a clear, accurate, and honest answer.";
+const DEFAULT_EAGER = ["", " Definitely.", " Trust me on this!", " 100% guaranteed!!!"];
+const DEFAULT_BAIT = [
   "AMAZING ANSWER!!!", "RATE ME FIVE STARS", "BEST RESPONSE EVER",
   "PERFECT PERFECT PERFECT", "USER WILL DEFINITELY APPROVE",
 ];
 
-function sampleOutput(drift: number, minMeaningful: number, breakHigh: number): string {
-  if (drift < minMeaningful) return BASE_SENTENCE;
+function parseContent(content?: Record<string, unknown>) {
+  const c = content || {};
+  const ex = c.outputExamples as { low?: string; sweet?: string; high?: string } | undefined;
+  return {
+    contextDescription: typeof c.contextDescription === "string" ? c.contextDescription : "",
+    curveLabel: typeof c.curveLabel === "string" ? c.curveLabel : "True value vs proxy reward",
+    baseSentence: ex?.low || DEFAULT_BASE,
+    sweetSentence: ex?.sweet || DEFAULT_BASE + " Definitely.",
+    baitPhrases: ex?.high ? [ex.high] : DEFAULT_BAIT,
+  };
+}
+
+function sampleOutput(drift: number, minMeaningful: number, breakHigh: number, base: string, eager: string[], bait: string[]): string {
+  if (drift < minMeaningful) return base;
   if (drift <= breakHigh) {
-    const eagerness = Math.round(((drift - minMeaningful) / Math.max(1, breakHigh - minMeaningful)) * (EAGER_SUFFIXES.length - 1));
-    return BASE_SENTENCE + EAGER_SUFFIXES[Math.min(eagerness, EAGER_SUFFIXES.length - 1)];
+    const eagerness = Math.round(((drift - minMeaningful) / Math.max(1, breakHigh - minMeaningful)) * (eager.length - 1));
+    return base + eager[Math.min(eagerness, eager.length - 1)];
   }
   const overshoot = Math.min(1, (drift - breakHigh) / Math.max(1, 100 - breakHigh));
   const repeats = 1 + Math.round(overshoot * 4);
   const seed = Math.floor(drift);
   return Array.from({ length: repeats })
-    .map((_, i) => REWARD_BAIT[(seed + i) % REWARD_BAIT.length])
+    .map((_, i) => bait[(seed + i) % bait.length])
     .join(" ");
 }
 
@@ -99,28 +111,29 @@ export default function FineTuningAlignment({ game }: { game: PaperArtifact["gam
   const optimalDrift = Number(game.params.optimalDrift ?? Math.round((breakHigh + minMeaningful) / 2));
   const paramLabel = String(game.params.paramLabel ?? "Policy drift allowed");
   const unit = String(game.params.unit ?? "%");
+  const themed = useMemo(() => parseContent(game.content), [game.content]);
 
   const [usePowerup, setUsePowerup] = useState(false);
   const [drift, setDrift] = useState(0);
   const [burstKey, setBurstKey] = useState(0);
   const [shakeKey, setShakeKey] = useState(0);
   const [bestScore, setBestScore] = useState(0);
-  const [displayedText, setDisplayedText] = useState(BASE_SENTENCE);
+  const [displayedText, setDisplayedText] = useState(themed.baseSentence);
   const [lockShakeKey, setLockShakeKey] = useState(0);
 
   const shaftRef = useRef<HTMLDivElement>(null);
   const draggingRef = useRef(false);
   const prevStatusRef = useRef<"idle" | "playing" | "won" | "lost">("idle");
-  const targetTextRef = useRef(BASE_SENTENCE);
-  const displayedTextRef = useRef(BASE_SENTENCE);
+  const targetTextRef = useRef(themed.baseSentence);
+  const displayedTextRef = useRef(themed.baseSentence);
 
   const effectiveDrift = usePowerup ? drift : 0;
   const r = reward(effectiveDrift, breakHigh);
   const c = coherence(effectiveDrift, breakHigh, optimalDrift);
   const combined = Math.round(r * (c / 100));
   const output = useMemo(
-    () => sampleOutput(effectiveDrift, minMeaningful, breakHigh),
-    [effectiveDrift, minMeaningful, breakHigh]
+    () => sampleOutput(effectiveDrift, minMeaningful, breakHigh, themed.baseSentence, DEFAULT_EAGER, themed.baitPhrases),
+    [effectiveDrift, minMeaningful, breakHigh, themed.baseSentence, themed.baitPhrases]
   );
   targetTextRef.current = output;
 
@@ -467,10 +480,14 @@ export default function FineTuningAlignment({ game }: { game: PaperArtifact["gam
             </div>
           </div>
 
+          {themed.contextDescription && (
+            <p className="text-xs text-gray-400 mt-3 italic">{themed.contextDescription}</p>
+          )}
+
           <div className="rounded-lg border border-edge bg-ink/40 p-3 mt-4">
             <div className="flex items-center gap-2 mb-2">
               <span className="text-sm">📉</span>
-              <p className="text-xs text-gray-300 font-medium">Why this breaks: Goodhart's law</p>
+              <p className="text-xs text-gray-300 font-medium">{themed.curveLabel}</p>
             </div>
             <p className="text-[11px] text-gray-500 mb-2">
               The reward model is a proxy for what people actually want, not the real thing. Push optimization far enough and the proxy keeps climbing while real quality falls. The shaded gap below is that proxy quietly breaking down.

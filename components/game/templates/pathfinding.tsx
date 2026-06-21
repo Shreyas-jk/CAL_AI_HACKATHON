@@ -46,7 +46,16 @@ function search(grid: boolean[][], n: number, budget: number, informed: boolean)
   return { expanded, reached: false };
 }
 
+function parsePathfindingContent(content?: Record<string, unknown>) {
+  const c = content || {};
+  return {
+    scenarioContext: typeof c.scenarioContext === "string" ? c.scenarioContext : "",
+    heuristicDescription: typeof c.heuristicDescription === "string" ? c.heuristicDescription : "",
+  };
+}
+
 export default function Pathfinding({ game }: { game: PaperArtifact["game"] }) {
+  const themed = useMemo(() => parsePathfindingContent(game.content), [game.content]);
   const n = Number(game.params.gridSize ?? 15);
   const wallP = Number(game.params.walls ?? 0.28);
   const budget = Number(game.params.budget ?? 60);
@@ -88,6 +97,8 @@ export default function Pathfinding({ game }: { game: PaperArtifact["game"] }) {
             ? <span className="text-good">Reached the goal with {result.expanded.length} expansions.</span>
             : <span className="text-bad">Budget exhausted after {result.expanded.length} expansions — no path found.</span>}
         </p>
+        {themed.scenarioContext && <p className="text-xs text-gray-400 italic">{themed.scenarioContext}</p>}
+        {themed.heuristicDescription && usePowerup && <p className="text-xs text-accent2">{themed.heuristicDescription}</p>}
         <p className="text-xs text-gray-500">
           Toggle to {usePowerup ? "the naive baseline to watch it fail" : "the paper's heuristic to see it focus the search"}.
         </p>

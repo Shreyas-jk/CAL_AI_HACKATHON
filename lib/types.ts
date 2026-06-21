@@ -1,5 +1,5 @@
 export type GameTemplateId =
-  | "pathfinding" | "attention" | "gridworld-rl" | "epidemic" | "efficiency" | "fine-tuning-alignment" | "reasoning" | "vision-detective" | "none";
+  | "pathfinding" | "attention" | "gridworld-rl" | "epidemic" | "efficiency" | "rag" | "fine-tuning-alignment" | "reasoning" | "vision-detective" | "none";
 
 export interface ConceptNode { id: string; label: string; group?: string; }
 export interface ConceptEdge { source: string; target: string; label?: string; }
@@ -20,6 +20,7 @@ export interface PaperArtifact {
     powerupLabel: string;   // the paper's method as power-up
     claim: string;          // before/after claim tied to the paper
     params: Record<string, number | string>;
+    content?: Record<string, unknown>;
   };
   eval: { faithfulness: number; hallucinationRisk: number; note: string };
   source: "claude" | "mock";

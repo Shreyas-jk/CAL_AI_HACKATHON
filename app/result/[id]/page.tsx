@@ -4,6 +4,7 @@ import { mockReasoning } from "@/lib/mockData";
 import Explanation from "@/components/Explanation";
 import ConceptMap from "@/components/ConceptMap";
 import GameRouter from "@/components/game/GameRouter";
+import ListenButton from "@/components/ListenButton";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +31,10 @@ export default async function ResultPage({ params }: { params: { id: string } })
 
       <section className="grid lg:grid-cols-2 gap-6">
         <div className="card p-5 space-y-3">
-          <h2 className="font-semibold text-accent2">Tier 1 · Understand</h2>
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="font-semibold text-accent2">Tier 1 · Understand</h2>
+            <ListenButton text={artifact.summary + ". " + artifact.plainEnglish.join(". ")} />
+          </div>
           <p className="text-sm text-gray-300">{artifact.summary}</p>
           <Explanation steps={artifact.plainEnglish} />
         </div>

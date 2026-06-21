@@ -1,7 +1,14 @@
+const { withSentryConfig } = require("@sentry/nextjs");
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // pdf-parse is a server-only dep
   experimental: { serverComponentsExternalPackages: ["pdf-parse"] },
 };
-module.exports = nextConfig;
+
+module.exports = withSentryConfig(nextConfig, {
+  silent: true,
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  disableSourceMapUpload: true,
+});

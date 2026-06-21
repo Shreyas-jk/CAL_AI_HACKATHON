@@ -22,7 +22,7 @@ import {
 const SeatGame = dynamic(() => import("../seat/SeatGame"), { ssr: false });
 
 const SESSION_IDS = SESSION_DEFS.map((s) => s.id);
-const SHORT: Record<SessionId, string> = {
+const DEFAULT_SHORT: Record<SessionId, string> = {
   Keynote: "Keynote",
   RAG: "RAG",
   Agents: "Agents",
@@ -30,7 +30,7 @@ const SHORT: Record<SessionId, string> = {
   Safety: "Safety",
   Multimodal: "Multimodal",
 };
-const VERIFY_SHORT: Record<string, string> = {
+const DEFAULT_VERIFY: Record<string, string> = {
   C1: "Keynote at 10",
   C2: "Robotics in GPU Lab",
   C3: "RAG and Agents separate",
@@ -40,6 +40,42 @@ const VERIFY_SHORT: Record<string, string> = {
   C7: "Robotics after Multimodal",
   C8: "No double-booking",
 };
+
+function parseTheme(content?: Record<string, unknown>) {
+  const c = content || {};
+  const names = Array.isArray(c.sessionNames) && (c.sessionNames as string[]).length === 6
+    ? c.sessionNames as string[] : null;
+  const rooms = Array.isArray(c.roomNames) && (c.roomNames as string[]).length === 3
+    ? c.roomNames as string[] : null;
+  const slots = Array.isArray(c.slotLabels) && (c.slotLabels as string[]).length === 4
+    ? c.slotLabels as string[] : null;
+  const theme = typeof c.theme === "string" ? c.theme : null;
+
+  const short: Record<SessionId, string> = names
+    ? { Keynote: names[0], RAG: names[1], Agents: names[2], Robotics: names[3], Safety: names[4], Multimodal: names[5] }
+    : DEFAULT_SHORT;
+
+  const verify: Record<string, string> = names
+    ? {
+        C1: `${names[0]} first`,
+        C2: `${names[3]} in ${rooms?.[1] || "Room B"}`,
+        C3: `${names[1]} & ${names[2]} separate`,
+        C4: `${names[4]} after ${names[2]}`,
+        C5: `${names[5]} not ${rooms?.[2] || "Room C"}`,
+        C6: `${rooms?.[1] || "Room B"} closes late`,
+        C7: `${names[3]} after ${names[5]}`,
+        C8: "No double-booking",
+      }
+    : DEFAULT_VERIFY;
+
+  return {
+    short,
+    verify,
+    headerText: theme || "AI SUMMIT",
+    slotLabels: slots || SLOTS,
+    roomLabels: rooms || ROOMS.map((r) => `Room ${r.id} (${r.name})`),
+  };
+}
 
 interface Constraint {
   id: string;
@@ -133,6 +169,7 @@ function genCandidate(guided: boolean, rng: RNG): Assignment {
 }
 
 export default function Reasoning({ game }: { game: PaperArtifact["game"] }) {
+  const themed = useMemo(() => parseTheme(game.content), [game.content]);
   const [usePowerup, setUsePowerup] = useState(false);
   const [attempts, setAttempts] = useState(1);
   const [verifier, setVerifier] = useState<Verifier>("off");
@@ -242,6 +279,7 @@ export default function Reasoning({ game }: { game: PaperArtifact["game"] }) {
               selectedId={result.selected.id}
               paused={aiPaused}
               onPause={() => setAiPaused((p) => !p)}
+              themed={themed}
             />
           </PuzzlePanel>
         </section>
@@ -353,11 +391,13 @@ function AiConferenceBoard({
   selectedId,
   paused,
   onPause,
+  themed,
 }: {
   attempt: Attempt;
   selectedId: number;
   paused: boolean;
   onPause: () => void;
+  themed: ReturnType<typeof parseTheme>;
 }) {
   const constraints = check(attempt.schedule);
   const happy = happyCount(attempt.schedule);
@@ -383,14 +423,14 @@ function AiConferenceBoard({
 
         <div className="absolute left-[1004px] top-[24px] w-[244px] rounded-[16px] border-[4px] border-[#4a3f35] bg-[#fffaf0] p-[10px] text-center">
           <div className="rounded-[10px] border-[3px] border-[#e39aa0] bg-[#f2e8d5] py-[7px] text-[24px] font-black leading-tight text-[#cd7f88]">
-            AI<br />SUMMIT
+            {themed.headerText.split(" ").map((w, i) => <span key={i}>{i > 0 && <br />}{w}</span>)}
           </div>
         </div>
 
         <div className="absolute left-[300px] top-[92px] h-[472px] w-[690px] overflow-hidden rounded-[26px] border-[6px] border-[#d98c93] bg-[#f7efde]">
           <div className="absolute inset-0 opacity-55 [background-image:linear-gradient(45deg,#eee1c8_25%,transparent_25%,transparent_75%,#eee1c8_75%,#eee1c8),linear-gradient(45deg,#eee1c8_25%,transparent_25%,transparent_75%,#eee1c8_75%,#eee1c8)] [background-position:0_0,23.5px_23.5px] [background-size:47px_47px]" />
           <div className="absolute left-[118px] right-[22px] top-[13px] grid grid-cols-4 text-center text-[15px] font-black text-[#6f6151]">
-            {SLOTS.map((slot) => <span key={slot}>{slot}</span>)}
+            {themed.slotLabels.map((slot) => <span key={slot}>{slot}</span>)}
           </div>
           <div className="absolute left-[24px] top-[55px] grid h-[378px] w-[640px] grid-cols-[86px_repeat(4,1fr)] grid-rows-3 gap-x-[16px] gap-y-[24px]">
             {ROOMS.map((room) => (
@@ -400,7 +440,7 @@ function AiConferenceBoard({
                   <span className="text-[11px] font-bold leading-tight text-[#6f6151]">{room.name}</span>
                 </div>
                 {SLOTS.map((_, slot) => (
-                  <AiSeat key={room.id + slot} room={room.id} slot={slot} schedule={attempt.schedule} />
+                  <AiSeat key={room.id + slot} room={room.id} slot={slot} schedule={attempt.schedule} short={themed.short} />
                 ))}
               </div>
             ))}
@@ -436,14 +476,14 @@ function AiConferenceBoard({
             {constraints.map((c) => (
               <div key={c.id} className="flex items-start gap-1">
                 <span className={c.ok ? "text-[#4fae7f]" : "text-[#d9685f]"}>{c.ok ? "✓" : "×"}</span>
-                <span>{VERIFY_SHORT[c.id] || c.text}</span>
+                <span>{themed.verify[c.id] || c.text}</span>
               </div>
             ))}
           </div>
         </div>
 
         <div className="absolute left-[300px] top-[594px] flex w-[690px] justify-around">
-          {SESSION_IDS.map((id) => <AiHomeGuest key={id} id={id} schedule={attempt.schedule} />)}
+          {SESSION_IDS.map((id) => <AiHomeGuest key={id} id={id} schedule={attempt.schedule} short={themed.short} />)}
         </div>
 
         <div className="absolute left-[485px] top-[671px] flex h-[34px] w-[310px] items-center justify-center rounded-full border-2 border-[#4a3f35] bg-[#fffaf0] px-4 text-[13px] font-black text-[#6f6151]">
@@ -453,7 +493,7 @@ function AiConferenceBoard({
   );
 }
 
-function AiSeat({ room, slot, schedule }: { room: Room; slot: number; schedule: Assignment }) {
+function AiSeat({ room, slot, schedule, short }: { room: Room; slot: number; schedule: Assignment; short: Record<SessionId, string> }) {
   const id = occupantAt(schedule, room, slot);
   const closed = isClosed(room, slot);
   return (
@@ -463,7 +503,7 @@ function AiSeat({ room, slot, schedule }: { room: Room; slot: number; schedule: 
       {closed ? (
         <span className="relative z-10 mt-8 rotate-[-10deg] rounded bg-[#fcf4e6] px-2 py-1 text-[11px] font-black text-[#d9685f]">CLOSED</span>
       ) : id ? (
-        <AiPlacedGuest id={id} schedule={schedule} />
+        <AiPlacedGuest id={id} schedule={schedule} short={short} />
       ) : (
         <span className="relative z-10 mt-8 text-[22px] text-[#b9ab95]">·</span>
       )}
@@ -471,7 +511,7 @@ function AiSeat({ room, slot, schedule }: { room: Room; slot: number; schedule: 
   );
 }
 
-function AiPlacedGuest({ id, schedule }: { id: SessionId; schedule: Assignment }) {
+function AiPlacedGuest({ id, schedule, short }: { id: SessionId; schedule: Assignment; short: Record<SessionId, string> }) {
   const def = sessionById(id);
   const m = mood(schedule, id);
   const status = wishStatus(schedule, id).find((w) => w.state === "bad")?.short;
@@ -484,12 +524,12 @@ function AiPlacedGuest({ id, schedule }: { id: SessionId; schedule: Assignment }
       <div className="grid h-[56px] w-[56px] place-items-center rounded-[18px] border-[3px] text-[22px] shadow-sm" style={{ backgroundColor: fill, borderColor: ring }}>
         {def.emoji}
       </div>
-      <div className="max-w-[96px] truncate rounded-full bg-[#fffaf0] px-2 text-[11px] font-black">{SHORT[id]}</div>
+      <div className="max-w-[96px] truncate rounded-full bg-[#fffaf0] px-2 text-[11px] font-black">{short[id]}</div>
     </div>
   );
 }
 
-function AiHomeGuest({ id, schedule }: { id: SessionId; schedule: Assignment }) {
+function AiHomeGuest({ id, schedule, short }: { id: SessionId; schedule: Assignment; short: Record<SessionId, string> }) {
   if (schedule[id]) return <div className="w-[11%]" />;
   const def = sessionById(id);
   const fill = "#" + def.color.toString(16).padStart(6, "0");
@@ -498,7 +538,7 @@ function AiHomeGuest({ id, schedule }: { id: SessionId; schedule: Assignment }) 
       <div className="grid h-[56px] w-[56px] place-items-center rounded-[18px] border-[3px] border-[#4a3f35] text-[22px]" style={{ backgroundColor: fill }}>
         {def.emoji}
       </div>
-      <div className="max-w-full truncate rounded-full bg-[#fffaf0] px-2 text-[11px] font-black">{SHORT[id]}</div>
+      <div className="max-w-full truncate rounded-full bg-[#fffaf0] px-2 text-[11px] font-black">{short[id]}</div>
     </div>
   );
 }

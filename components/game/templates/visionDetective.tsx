@@ -26,6 +26,14 @@ export default function VisionDetective({ game }: { game: PaperArtifact["game"] 
   const [showHelp, setShowHelp] = useState(false);
   const [showGlossary, setShowGlossary] = useState(false);
 
+  const themed = useMemo(() => {
+    const c = game.content || {};
+    return {
+      investigationContext: typeof c.investigationContext === "string" ? c.investigationContext : "",
+      caseLessons: Array.isArray(c.caseLessons) ? c.caseLessons as string[] : [],
+    };
+  }, [game.content]);
+
   const visionCase = VISION_CASES[caseIndex];
   const askedIds = asked[visionCase.id] ?? [];
   const run = useMemo(() => runVisionCase(visionCase, settings, askedIds), [visionCase, settings, askedIds]);
@@ -136,7 +144,10 @@ export default function VisionDetective({ game }: { game: PaperArtifact["game"] 
         {showCaseFile && (
           <div className="absolute left-4 top-24 w-[min(360px,calc(100%-2rem))] rounded-lg border border-edge bg-[#090b16]/95 p-4 shadow-xl">
             <div className="text-xs uppercase tracking-wide text-accent2">Paper lesson</div>
-            <p className="mt-2 text-sm text-gray-300">{String(game.params.lesson || visionCase.lesson)}</p>
+            {themed.investigationContext && <p className="mt-2 text-sm text-accent2/80 italic">{themed.investigationContext}</p>}
+            <p className="mt-2 text-sm text-gray-300">
+              {themed.caseLessons[caseIndex] || String(game.params.lesson || visionCase.lesson)}
+            </p>
             <p className="mt-3 border-l-2 border-accent pl-3 text-xs text-gray-400">{game.claim || "Ground language answers in visual evidence before trusting them."}</p>
           </div>
         )}

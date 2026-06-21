@@ -3,21 +3,37 @@
 Given the paper's category and summary, choose the best **router-wired, playable** game
 template id from:
 
-`pathfinding | attention | fine-tuning-alignment | reasoning | vision-detective | none`
+`pathfinding | attention | fine-tuning-alignment | reasoning | vision-detective | gridworld-rl | epidemic | none`
 
 Map by what the paper is about:
 
-- **pathfinding** — search, planning, A*/learned heuristics, graph traversal, maze/navigation, route optimization.
-- **attention** — transformer attention, self-attention, sequence/NLP, coreference, which tokens a model focuses on.
-- **fine-tuning-alignment** — fine-tuning, RLHF, DPO, preference optimization, reward modeling, alignment, policy drift / reward hacking.
-- **reasoning** — chain-of-thought, test-time compute, best-of-N sampling, verifiers/voting, multi-step or constraint-satisfaction reasoning, planning puzzles.
-- **vision-detective** — multimodal vision-language, VQA, OCR/document understanding, CLIP-style image-text, grounding, visual hallucination.
+- **pathfinding** — search, planning, A*/learned heuristics, graph traversal, maze/navigation, route optimization, evaluation/benchmarks, embedding similarity, metric navigation.
+- **attention** — transformer attention, self-attention, sequence/NLP, coreference, which tokens a model focuses on, prompt engineering, in-context learning, few-shot learning.
+- **fine-tuning-alignment** — fine-tuning, RLHF, DPO, preference optimization, reward modeling, alignment, policy drift / reward hacking, LLM pretraining, learning rate scheduling, loss landscape, training stability.
+- **reasoning** — chain-of-thought, test-time compute, best-of-N sampling, verifiers/voting, multi-step or constraint-satisfaction reasoning, planning puzzles, agentic AI, tool-use, task decomposition, agent planning.
+- **vision-detective** — multimodal vision-language, VQA, OCR/document understanding, CLIP-style image-text, grounding, visual hallucination, safety, interpretability, red-teaming, adversarial attacks, feature steering.
+- **gridworld-rl** — reinforcement learning, policy gradient, Q-learning, reward shaping, control.
+- **epidemic** — epidemic modeling, SIR/SIS, diffusion, information spread, contagion, network effects.
 - **none** — anything that fits none of the above.
 
+Papers about **efficiency/quantization/compression** or **RAG/retrieval** map to the nearest template above (they have separate flagship games at `/dev/efficiency` and `/dev/rag`).
+
 Prefer a real template when the paper plausibly fits; use `none` only when nothing matches.
-When `none` is returned, the pipeline falls back to keyword matching over template
-categories (`lib/templates.ts` → `pickTemplate`), which may still land on a shell template
-(`gridworld-rl`, `epidemic`).
+
+## Category-to-template mapping (10 PDF categories)
+
+| Category | Template | Mapping rationale |
+|----------|----------|------------------|
+| RAG | nearest / link to `/dev/rag` | Decoupled flagship |
+| Fine-tuning/Alignment | `fine-tuning-alignment` | Direct match |
+| Multimodal/Vision-language | `vision-detective` | Direct match |
+| Reasoning/CoT | `reasoning` | Direct match |
+| Efficiency/Compression | nearest / link to `/dev/efficiency` | Decoupled flagship |
+| Agentic AI | `reasoning` | Tool-call ordering = constraint puzzle |
+| LLM Pretraining | `fine-tuning-alignment` | Learning rate slider = drift slider |
+| Prompt Engineering | `attention` | Few-shot focus = attention weights |
+| Evaluation/Benchmarks | `pathfinding` | Navigating benchmark space |
+| Safety/Interpretability | `vision-detective` | Investigation mechanic |
 
 Return ONLY JSON:
 `{ "template", "confidence" (0..1), "goal", "baselineLabel", "powerupLabel", "claim", "params" }`
@@ -25,7 +41,5 @@ Return ONLY JSON:
 `params` are primitive knobs for the chosen template. For `vision-detective`, prefer
 `params: { "lesson", "methodName", "paperClaim" }`.
 
-> Note: `efficiency` and `rag` are intentionally **not** in this list — they are decoupled
-> engines reached via `/dev/efficiency` and `/dev/rag` with richer specs (TradeoffSpec / the
-> CRAG grid), not wired into the upload→classify→GameRouter path. A paper that best fits those
-> falls back to the nearest router-wired template (or `none`) here.
+> **Note:** `SYS_CLASSIFY` (the array string in `pipeline.ts`) is the runtime source of truth.
+> This file is a reference doc only — it is NOT read at runtime.

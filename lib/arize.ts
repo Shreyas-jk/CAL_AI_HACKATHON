@@ -21,12 +21,39 @@ export function scoreEval(paperText: string, a: Pick<PaperArtifact, "summary" | 
 export async function logToArize(event: Record<string, unknown>): Promise<void> {
   const key = process.env.ARIZE_API_KEY;
   const space = process.env.ARIZE_SPACE_ID;
-  if (!key || !space) return; // no-op in demo
+  if (!key || !space) return;
   try {
     await fetch("https://api.arize.com/v1/log", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: "Bearer " + key, "Space-Id": space },
-      body: JSON.stringify({ model: "papertrail-ai", ...event }),
+      body: JSON.stringify({
+        model: "papertrail-ai",
+        model_version: "2.0",
+        timestamp: new Date().toISOString(),
+        ...event,
+      }),
     });
   } catch {}
+}
+
+export async function logGameSpecEval(event: {
+  id: string;
+  template: string;
+  category: string;
+  hasGameSpec: boolean;
+  vizType?: string;
+  faithfulness: number;
+  hallucinationRisk: number;
+  pipelineLatencyMs: number;
+}): Promise<void> {
+  await logToArize({
+    ...event,
+    eval_type: "game_spec_generation",
+    tags: {
+      template: event.template,
+      category: event.category,
+      has_game_spec: event.hasGameSpec,
+      viz_type: event.vizType || "none",
+    },
+  });
 }
