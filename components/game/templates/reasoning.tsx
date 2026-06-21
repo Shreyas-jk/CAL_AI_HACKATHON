@@ -181,10 +181,14 @@ export default function Reasoning({ game }: { game: PaperArtifact["game"] }) {
   // The AI board starts UNSOLVED at load; it only populates once the AI actually
   // reasons (Run reasoning, or choosing a strategy via the baseline/powerup toggle).
   const [hasRun, setHasRun] = useState(false);
+  // ONE full-width board at a time; toggle between YOUR puzzle and the AI puzzle.
+  const [view, setView] = useState<"you" | "ai">("you");
 
   const preset = useCallback((power: boolean) => {
     setUsePowerup(power);
     setHasRun(true);
+    // single-shot → your board, best-of-N → AI board (reinforces the paper's point)
+    setView(power ? "ai" : "you");
     setAiPaused(false);
     setPreviewId(1);
     if (power) {
@@ -259,34 +263,49 @@ export default function Reasoning({ game }: { game: PaperArtifact["game"] }) {
       status={status}
       onReset={() => {
         setHasRun(false);
+        setView("you");
         setAiPaused(false);
         setPreviewId(1);
       }}
     >
       <div className="space-y-5">
-        <section className="grid gap-4 xl:grid-cols-2">
-          <PuzzlePanel
-            title="Human puzzle"
-            meta="Manual solve"
-            detail="Drag every talk into a seat, then confirm when all 6 guests are happy."
-          >
-            <SeatGame />
-          </PuzzlePanel>
-
-          <PuzzlePanel
-            title="AI puzzle"
-            meta={result.actual + " sampled"}
-            detail="Same rooms, talks, closed seat, and 8-rule verifier; only the solving strategy changes."
-          >
-            <AiConferenceBoard
-              attempt={preview}
-              selectedId={result.selected.id}
-              paused={aiPaused}
-              onPause={() => setAiPaused((p) => !p)}
-              themed={themed}
-              revealed={hasRun}
+        <section className="space-y-3">
+          {/* prominent two-way view toggle: ONE full-width board at a time */}
+          <div className="flex items-stretch gap-2">
+            <BoardTab
+              active={view === "you"}
+              onClick={() => setView("you")}
+              label="Your puzzle"
+              sub="Drag the talks yourself"
             />
-          </PuzzlePanel>
+            <BoardTab
+              active={view === "ai"}
+              onClick={() => setView("ai")}
+              label="AI puzzle"
+              sub={hasRun ? result.actual + " sampled" : "press Run reasoning"}
+            />
+          </div>
+          <p className="text-[11px] text-white/55">
+            {view === "you"
+              ? "Drag every talk into a seat, then confirm when all 6 guests are happy."
+              : "Same rooms, talks, closed seat, and 8-rule verifier — only the solving strategy changes."}
+          </p>
+
+          {/* full-width board — bigger seats, labels, and talk icons */}
+          <div className="min-w-0">
+            {view === "you" ? (
+              <SeatGame />
+            ) : (
+              <AiConferenceBoard
+                attempt={preview}
+                selectedId={result.selected.id}
+                paused={aiPaused}
+                onPause={() => setAiPaused((p) => !p)}
+                themed={themed}
+                revealed={hasRun}
+              />
+            )}
+          </div>
         </section>
 
         <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
@@ -331,6 +350,7 @@ export default function Reasoning({ game }: { game: PaperArtifact["game"] }) {
               />
               <button className="btn-primary w-full py-1.5" onClick={() => {
                 setHasRun(true);
+                setView("ai"); // auto-switch to the AI board so you watch it succeed
                 setAiPaused(false);
                 setPreviewId(1);
                 setRunId((r) => r + 1);
@@ -375,20 +395,21 @@ export default function Reasoning({ game }: { game: PaperArtifact["game"] }) {
   );
 }
 
-function PuzzlePanel({ title, meta, detail, children }: { title: string; meta: string; detail: string; children: React.ReactNode }) {
+function BoardTab({ active, onClick, label, sub }: { active: boolean; onClick: () => void; label: string; sub: string }) {
   return (
-    <div className="min-w-0 space-y-2">
-      <div className="flex min-h-[52px] items-end justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="text-sm font-semibold text-white">{title}</h3>
-          <p className="mt-1 text-xs leading-snug text-gray-400">{detail}</p>
-        </div>
-        <span className="shrink-0 rounded-full border border-edge px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-gray-300">
-          {meta}
-        </span>
-      </div>
-      {children}
-    </div>
+    <button
+      onClick={onClick}
+      aria-pressed={active}
+      className={
+        "flex-1 rounded-lg border-2 px-4 py-2.5 text-left transition " +
+        (active
+          ? "border-accent bg-accent/25 text-white shadow-[3px_3px_0_0_rgba(0,0,0,0.5)]"
+          : "border-white/15 text-white/55 hover:border-white/35 hover:text-white/80")
+      }
+    >
+      <div className="label text-sm font-bold">{label}</div>
+      <div className="text-[11px] normal-case tracking-normal text-white/55">{sub}</div>
+    </button>
   );
 }
 
