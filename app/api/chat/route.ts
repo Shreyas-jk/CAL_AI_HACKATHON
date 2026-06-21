@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { hasClaude, streamChat, type ChatMessage } from "@/lib/claude";
+import { hasChatLLM, streamChat, type ChatMessage } from "@/lib/claude";
 import { getPaperText, getArtifact } from "@/lib/store";
 
 export const runtime = "nodejs";
@@ -32,7 +32,7 @@ function groundingSystem(title: string, paper: string) {
 // GET /api/chat?id=... -> is grounded chat available for this paper?
 export async function GET(req: NextRequest) {
   const id = req.nextUrl.searchParams.get("id") || "";
-  if (!hasClaude()) return NextResponse.json({ available: false, reason: "no-key" });
+  if (!hasChatLLM()) return NextResponse.json({ available: false, reason: "no-key" });
   const text = id ? await getPaperText(id) : null;
   return NextResponse.json({ available: !!text, reason: text ? "ok" : "no-text" });
 }
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
   const id: string = body?.id || "";
   const messages: ChatMessage[] = Array.isArray(body?.messages) ? body.messages : [];
 
-  if (!hasClaude()) {
+  if (!hasChatLLM()) {
     return NextResponse.json({ available: false, reason: "no-key" }, { status: 200 });
   }
   const paper = id ? await getPaperText(id) : null;

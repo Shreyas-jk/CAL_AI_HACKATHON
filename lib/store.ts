@@ -7,7 +7,11 @@ const PAPER_KEY = (id: string) => "papertrail:paper:" + id;
 const TTL_SEC = 60 * 60 * 24 * 7; // 7 days — matches the artifact TTL
 const MAX_PAPER_CHARS = 200_000;  // guard; a full paper still fits Sonnet 4.6's window
 const mem = new Map<string, PaperArtifact>();
-const paperMem = new Map<string, string>();
+// Pin to globalThis so the in-memory paper-text store is shared across Next route
+// bundles in one process (without this, /api/extract and /api/chat get separate
+// Map instances and text saved at intake isn't visible to chat unless Redis is set).
+const g = globalThis as unknown as { __paperMem?: Map<string, string> };
+const paperMem: Map<string, string> = g.__paperMem ?? (g.__paperMem = new Map());
 
 /**
  * Persist the raw parsed paper text separately from the artifact (kept off the
