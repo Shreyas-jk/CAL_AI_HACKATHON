@@ -51,7 +51,11 @@ export function createGame(Phaser: typeof PhaserNS, parent: HTMLElement, opts: G
     confirmBg!: PhaserNS.GameObjects.Graphics;
     confirmTxt!: PhaserNS.GameObjects.Text;
     banner!: PhaserNS.GameObjects.Container;
+    pauseButton!: PhaserNS.GameObjects.Container;
+    pauseIcon!: PhaserNS.GameObjects.Graphics;
+    pauseOverlay!: PhaserNS.GameObjects.Container;
     won = false;
+    paused = false;
 
     constructor() {
       super("conference");
@@ -70,8 +74,10 @@ export function createGame(Phaser: typeof PhaserNS, parent: HTMLElement, opts: G
       this.drawBanner();
 
       this.selected = puzzle.sessions[0].id;
+      (this.input as any).dragDistanceThreshold = 2;
 
       this.input.on("dragstart", (_p: any, obj: any) => {
+        if (this.paused) return;
         this.children.bringToTop(obj);
         const id = obj.getData("id") as SessionId;
         this.selected = id;
@@ -79,10 +85,12 @@ export function createGame(Phaser: typeof PhaserNS, parent: HTMLElement, opts: G
         this.renderCard();
       });
       this.input.on("drag", (_p: any, obj: any, dragX: number, dragY: number) => {
+        if (this.paused) return;
         obj.x = dragX;
         obj.y = dragY;
       });
       this.input.on("dragend", (p: any, obj: any) => {
+        if (this.paused) return;
         const id = obj.getData("id") as SessionId;
         this.tweens.add({ targets: this.inners[id], scale: 1, duration: 160, ease: "Back.out" });
         const seat = this.seats.find((s) => Phaser.Geom.Rectangle.Contains(s.rect, p.x, p.y));
@@ -152,6 +160,49 @@ export function createGame(Phaser: typeof PhaserNS, parent: HTMLElement, opts: G
       g.fillStyle(C.ink, 1);
       g.fillRoundedRect(40, 38, 6, 20, 2);
       g.fillRoundedRect(51, 38, 6, 20, 2);
+      this.pauseIcon = g;
+      const hit = this.add.circle(48, 48, 34, 0x000000, 0).setInteractive({ useHandCursor: true });
+      hit.on("pointerdown", (p: any) => {
+        p.event?.stopPropagation?.();
+        this.togglePause();
+      });
+      this.pauseButton = this.add.container(0, 0, [g, hit]);
+      this.pauseButton.setDepth(1000);
+      this.drawPauseOverlay();
+    }
+
+    drawPauseOverlay() {
+      const shade = this.add.rectangle(640, 360, 1280, 720, 0x4a3f35, 0.32);
+      const panel = this.add.graphics();
+      this.rr(panel, 475, 270, 330, 150, 22, C.white, C.ink, 4);
+      const title = this.add.text(640, 326, "Paused", { fontFamily: FONT, fontSize: "34px", color: hex(C.coralDk), fontStyle: "bold" }).setOrigin(0.5);
+      const hint = this.add.text(640, 366, "Tap pause again to keep seating talks", { fontFamily: FONT, fontSize: "16px", color: hex(C.inkSoft) }).setOrigin(0.5);
+      this.pauseOverlay = this.add.container(0, 0, [shade, panel, title, hint]);
+      this.pauseOverlay.setDepth(900);
+      this.pauseOverlay.setVisible(false);
+    }
+
+    redrawPauseIcon() {
+      this.pauseIcon.clear();
+      this.pauseIcon.fillStyle(this.paused ? C.good : C.coral, 1);
+      this.pauseIcon.fillCircle(48, 48, 24);
+      this.pauseIcon.lineStyle(4, C.ink, 1);
+      this.pauseIcon.strokeCircle(48, 48, 24);
+      this.pauseIcon.fillStyle(C.ink, 1);
+      if (this.paused) {
+        this.pauseIcon.fillTriangle(42, 36, 42, 60, 61, 48);
+      } else {
+        this.pauseIcon.fillRoundedRect(40, 38, 6, 20, 2);
+        this.pauseIcon.fillRoundedRect(51, 38, 6, 20, 2);
+      }
+    }
+
+    togglePause() {
+      this.paused = !this.paused;
+      if (this.paused) this.tweens.pauseAll();
+      else this.tweens.resumeAll();
+      this.pauseOverlay.setVisible(this.paused);
+      this.redrawPauseIcon();
     }
 
     drawVenue() {
@@ -274,10 +325,18 @@ export function createGame(Phaser: typeof PhaserNS, parent: HTMLElement, opts: G
 
         const outer = this.add.container(hx, hy, [inner, bubble]);
         outer.setData("id", def.id);
-        outer.setSize(64, 84);
-        outer.setInteractive(new Phaser.Geom.Rectangle(-32, -44, 64, 88), Phaser.Geom.Rectangle.Contains);
+        outer.setSize(96, 112);
+        outer.setInteractive(new Phaser.Geom.Rectangle(-48, -58, 96, 118), Phaser.Geom.Rectangle.Contains);
+        (outer.input as any).cursor = "grab";
         this.input.setDraggable(outer);
         outer.on("pointerover", () => {
+          if (this.paused) return;
+          this.selected = def.id;
+          this.renderCard();
+        });
+        outer.on("pointerdown", () => {
+          if (this.paused) return;
+          this.children.bringToTop(outer);
           this.selected = def.id;
           this.renderCard();
         });
@@ -360,7 +419,13 @@ export function createGame(Phaser: typeof PhaserNS, parent: HTMLElement, opts: G
       const def = puzzle.sessions.find((s) => s.id === id)!;
       const items: PhaserNS.GameObjects.GameObject[] = [];
       // header
-      const head = this.add.text(20, 16, def.emoji + "  " + def.name, { fontFamily: FONT, fontSize: "19px", color: hex(C.ink), fontStyle: "bold" });
+      const head = this.add.text(20, 14, def.emoji + "  " + def.name, {
+        fontFamily: FONT,
+        fontSize: "18px",
+        color: hex(C.ink),
+        fontStyle: "bold",
+        wordWrap: { width: 146 },
+      });
       items.push(head);
       // tag pill (right)
       const tg = this.add.graphics();
@@ -371,12 +436,12 @@ export function createGame(Phaser: typeof PhaserNS, parent: HTMLElement, opts: G
       // divider
       const dv = this.add.graphics();
       dv.lineStyle(2, C.cardDk, 1);
-      dv.lineBetween(20, 52, 236, 52);
+      dv.lineBetween(20, 58, 236, 58);
       items.push(dv);
       // wishes
       const ws = wishStatus(this.assignment, id);
       ws.forEach((w, i) => {
-        const y = 68 + i * 34;
+        const y = 76 + i * 34;
         const box = this.add.graphics();
         const col = w.state === "ok" ? C.good : w.state === "bad" ? C.bad : C.grey;
         this.rr(box, 20, y, 20, 20, 5, w.state === "ok" ? C.good : C.white, col, 2);
@@ -432,12 +497,14 @@ export function createGame(Phaser: typeof PhaserNS, parent: HTMLElement, opts: G
       const t = this.add.text(0, -16, "Full house!", { fontFamily: FONT, fontSize: "34px", color: hex(C.good), fontStyle: "bold" }).setOrigin(0.5);
       const t2 = this.add.text(0, 24, "Every guest is happy \u{1F389}", { fontFamily: FONT, fontSize: "18px", color: hex(C.inkSoft) }).setOrigin(0.5);
       const c = this.add.container(645, 326, [g, t, t2]);
+      c.setDepth(2000);
       c.setAlpha(0);
       c.setScale(0.8);
       this.banner = c;
     }
 
     celebrate() {
+      this.children.bringToTop(this.banner);
       this.tweens.add({ targets: this.banner, alpha: 1, scale: 1, duration: 360, ease: "Back.out", yoyo: true, hold: 1400 });
       // guests hop
       puzzle.sessions.forEach((s, i) => {
@@ -445,7 +512,7 @@ export function createGame(Phaser: typeof PhaserNS, parent: HTMLElement, opts: G
       });
       // stars burst
       for (let i = 0; i < 16; i++) {
-        const st = this.add.text(645, 326, Math.random() > 0.5 ? "\u2B50" : "\u2728", { fontFamily: FONT, fontSize: "22px" }).setOrigin(0.5);
+        const st = this.add.text(645, 326, Math.random() > 0.5 ? "\u2B50" : "\u2728", { fontFamily: FONT, fontSize: "22px" }).setOrigin(0.5).setDepth(2001);
         const ang = (Math.PI * 2 * i) / 16;
         this.tweens.add({
           targets: st,
@@ -490,11 +557,13 @@ export function createGame(Phaser: typeof PhaserNS, parent: HTMLElement, opts: G
   }
 
   return new Phaser.Game({
-    type: Phaser.AUTO,
+    type: Phaser.CANVAS,
     parent,
     width: 1280,
     height: 720,
     backgroundColor: hex(C.cream),
+    input: { activePointers: 3 },
+    fps: { target: 60, smoothStep: true },
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
     scene: ConferenceScene,
   });

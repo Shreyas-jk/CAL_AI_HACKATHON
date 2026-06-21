@@ -36,7 +36,11 @@ export default function SeatGame({ puzzle = defaultPuzzle }: { puzzle?: Puzzle }
 
   return (
     <div className="rounded-2xl overflow-hidden border shadow-inner" style={{ background: "#f2e8d5", borderColor: "#e0cfad" }}>
-      <div ref={hostRef} className="w-full" style={{ aspectRatio: "1280 / 720" }} />
+      <div
+        ref={hostRef}
+        className="w-full"
+        style={{ aspectRatio: "1280 / 720", touchAction: "none", userSelect: "none" }}
+      />
     </div>
   );
 }
