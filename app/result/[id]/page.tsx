@@ -6,6 +6,7 @@ import ConceptMap from "@/components/ConceptMap";
 import GameRouter from "@/components/game/GameRouter";
 import ListenButton from "@/components/ListenButton";
 import Cabinet from "@/components/Cabinet";
+import PaperChat from "@/components/PaperChat";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +48,15 @@ export default async function ResultPage({ params }: { params: { id: string } })
             </div>
           </Cabinet>
         </div>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="label text-sm font-bold text-mint-dark">Ask the paper</h2>
+        <Cabinet label="Grounded Q&amp;A">
+          <div className="p-4">
+            <PaperChat id={params.id} />
+          </div>
+        </Cabinet>
       </section>
 
       <section className="space-y-3">

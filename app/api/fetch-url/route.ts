@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { extractPdfText } from "@/lib/chunk";
 import { buildArtifact } from "@/lib/pipeline";
-import { saveArtifact } from "@/lib/store";
+import { saveArtifact, savePaperText } from "@/lib/store";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -74,6 +74,7 @@ export async function POST(req: NextRequest) {
 
     const artifact = await buildArtifact(id, rawText, title);
     await saveArtifact(artifact);
+    await savePaperText(id, rawText); // retain full text for the grounded chat (skips empty)
     return NextResponse.json({ id, artifact });
   } catch (e) {
     return NextResponse.json(
