@@ -1,5 +1,5 @@
 export type GameTemplateId =
-  | "pathfinding" | "attention" | "gridworld-rl" | "epidemic" | "efficiency" | "none";
+  | "pathfinding" | "attention" | "gridworld-rl" | "epidemic" | "efficiency" | "fine-tuning-alignment" | "none";
 
 export interface ConceptNode { id: string; label: string; group?: string; }
 export interface ConceptEdge { source: string; target: string; label?: string; }
