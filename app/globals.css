@@ -1,11 +1,137 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Space+Mono:wght@400;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root { color-scheme: dark; }
-body { background: radial-gradient(1200px 600px at 70% -10%, #1b1538 0%, #0a0a12 55%); }
-.card { @apply bg-panel border border-edge rounded-xl; }
-.btn { @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 font-medium transition; }
-.btn-primary { @apply btn bg-accent text-white hover:opacity-90; }
-.btn-ghost { @apply btn border border-edge text-gray-200 hover:bg-edge/40; }
-.tag { @apply text-xs px-2 py-0.5 rounded-full border border-edge text-gray-300; }
+:root {
+  --parchment: #FFF8ED;
+  --paper: #FFFDF7;
+  --charcoal: #2D3142;
+  --coral: #FF6B6B;
+  --mint: #4ECDC4;
+  --font-mono: 'Space Mono', ui-monospace, 'JetBrains Mono', Menlo, monospace;
+  --font-serif: 'DM Serif Display', Georgia, 'Times New Roman', serif;
+  color-scheme: light;
+}
+
+html { font-family: var(--font-mono); }
+
+body {
+  min-height: 100vh;
+  color: var(--charcoal);
+  background-color: var(--parchment);
+  /* very subtle retro grid over the parchment */
+  background-image:
+    linear-gradient(rgba(45, 49, 66, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(45, 49, 66, 0.035) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+@layer components {
+  /* ---- typography helpers ---- */
+  .display { font-family: var(--font-serif); font-weight: 400; line-height: 1.05; }
+  .label { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.12em; }
+
+  /* ---- cards / panels ---- */
+  .card {
+    background: var(--paper);
+    border: 1.5px solid var(--charcoal);
+    border-radius: 0.75rem;
+    box-shadow: 2px 2px 0 0 var(--charcoal);
+  }
+
+  /* ---- chunky retro buttons (all variants get the base) ---- */
+  .btn, .btn-primary, .btn-secondary, .btn-ghost {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+    font-family: var(--font-mono); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+    font-size: 0.875rem; line-height: 1;
+    border: 1.5px solid var(--charcoal); border-radius: 0.5rem; padding: 0.5rem 1rem;
+    color: var(--charcoal); background: var(--paper); cursor: pointer;
+    box-shadow: 3px 3px 0 0 var(--charcoal);
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+  }
+  .btn:hover, .btn-primary:hover, .btn-secondary:hover, .btn-ghost:hover {
+    transform: translate(-1px, -1px); box-shadow: 4px 4px 0 0 var(--charcoal);
+  }
+  .btn:active, .btn-primary:active, .btn-secondary:active, .btn-ghost:active {
+    transform: translate(2px, 2px); box-shadow: 1px 1px 0 0 var(--charcoal);
+  }
+  .btn:disabled, .btn-primary:disabled, .btn-secondary:disabled, .btn-ghost:disabled {
+    opacity: 0.5; transform: none; box-shadow: 2px 2px 0 0 var(--charcoal); cursor: not-allowed;
+  }
+  .btn-primary { background: var(--coral); color: #2D3142; }
+  .btn-secondary { background: var(--mint); color: #2D3142; }
+  .btn-ghost { background: var(--paper); color: var(--charcoal); }
+
+  /* ---- pill tag / small mono label ---- */
+  .tag {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em;
+    font-size: 0.68rem; padding: 0.12rem 0.55rem; border-radius: 9999px;
+    border: 1.5px solid var(--charcoal); color: var(--charcoal); background: var(--paper);
+  }
+
+  /* ---- arcade cabinet / CRT bezel around game viewports ---- */
+  .cabinet {
+    position: relative; border-radius: 1rem; padding: 0.7rem;
+    background: #15171E; border: 4px solid var(--charcoal); color: #E8EBF0;
+    box-shadow: 5px 5px 0 0 var(--charcoal), inset 0 0 0 2px rgba(78, 205, 196, 0.12);
+  }
+  .cabinet-screen {
+    position: relative; border-radius: 0.6rem; overflow: hidden; background: #0E0F14;
+    box-shadow: inset 0 0 44px rgba(0, 0, 0, 0.6);
+  }
+  /* faint scanlines + CRT glow, non-interactive overlay */
+  .cabinet-screen::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: 0.6rem;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,0) 0, rgba(0,0,0,0) 2px, rgba(0,0,0,0.10) 3px);
+  }
+  .cabinet-screen::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 1; border-radius: 0.6rem;
+    box-shadow: inset 0 0 60px rgba(78, 205, 196, 0.08);
+  }
+}
+
+/* ---- sliders: charcoal track + solid round charcoal thumb ---- */
+input[type="range"] {
+  -webkit-appearance: none; appearance: none; width: 100%; height: 6px;
+  border-radius: 9999px; background: var(--charcoal); outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 9999px;
+  background: var(--charcoal); border: 2px solid var(--paper); box-shadow: 0 0 0 1.5px var(--charcoal); cursor: pointer;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 18px; height: 18px; border-radius: 9999px; background: var(--charcoal);
+  border: 2px solid var(--paper); cursor: pointer;
+}
+
+/* file input button inherits the retro look */
+input[type="file"]::file-selector-button {
+  font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700;
+  border: 1.5px solid var(--charcoal); border-radius: 0.5rem; padding: 0.4rem 0.8rem; margin-right: 0.75rem;
+  background: var(--mint); color: #2D3142; box-shadow: 2px 2px 0 0 var(--charcoal); cursor: pointer;
+}
+
+/* ----------------------------------------------------------------------------
+   Inside a .cabinet the game keeps its ORIGINAL dark look — only the bezel is
+   new. These plain (un-layered) rules out-specify the light chrome classes so
+   shared components (.card/.btn/.tag/sliders) re-skin to dark within a cabinet,
+   without touching any game code. The dark frame bridges the dark 3D scenes.
+---------------------------------------------------------------------------- */
+.cabinet { color: #e7eaf1; }
+.cabinet .card {
+  background: #171823; border-color: #34374d; color: #e7eaf1; box-shadow: 2px 2px 0 0 rgba(0,0,0,0.5);
+}
+.cabinet .tag {
+  background: rgba(255, 255, 255, 0.04); border-color: #3c3f57; color: #c9ccd9;
+}
+.cabinet .btn, .cabinet .btn-ghost {
+  background: #1d1f2b; color: #e7eaf1; border-color: #3c3f57; box-shadow: 2px 2px 0 0 rgba(0,0,0,0.55);
+}
+.cabinet .btn-primary { background: var(--coral); color: #15161f; border-color: #0c0d12; }
+.cabinet .btn-secondary { background: var(--mint); color: #15161f; border-color: #0c0d12; }
+.cabinet input[type="range"] { background: #3c3f57; }
+.cabinet input[type="range"]::-webkit-slider-thumb { background: var(--mint); border-color: #15161f; box-shadow: 0 0 0 1.5px #15161f; }
+.cabinet input[type="range"]::-moz-range-thumb { background: var(--mint); border-color: #15161f; }

@@ -1,5 +1,6 @@
 "use client";
 import Attention from "@/components/game/templates/attention";
+import Cabinet from "@/components/Cabinet";
 import { MOCK_ARTIFACTS } from "@/lib/mockData";
 
 // Dev-only harness: render the attention ("Spotlight") game directly from its baked
@@ -12,16 +13,18 @@ export default function DevAttentionPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Dev · Attention</h1>
-        <p className="text-gray-400 text-sm">
-          Renders the <span className="text-accent">Spotlight</span> (uniform vs learned attention)
+        <h1 className="display text-3xl">Dev · Attention</h1>
+        <p className="text-charcoal/65 text-sm mt-1">
+          Renders the <span className="text-coral font-bold">Spotlight</span> (uniform vs learned attention)
           game from a baked mock artifact — skips upload and the classifier.
         </p>
       </div>
 
-      <div className="card p-5">
-        <Attention game={game} />
-      </div>
+      <Cabinet label="Spotlight">
+        <div className="p-4">
+          <Attention game={game} />
+        </div>
+      </Cabinet>
     </div>
   );
 }

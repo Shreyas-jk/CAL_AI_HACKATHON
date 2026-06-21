@@ -1,4 +1,5 @@
 import RagGame from "@/components/game/rag/RagGame";
+import Cabinet from "@/components/Cabinet";
 
 // Dev-only harness for the CRAG routing game. Renders the playable UI over the
 // shipped, precomputed grid (lib/games/rag/data/grid.json) — ZERO runtime model
@@ -7,13 +8,15 @@ export default function DevRagPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Dev · CRAG Routing Game</h1>
-        <p className="text-gray-400 text-sm">
-          Naive RAG trusts retrieval blindly. <span className="text-accent2">Corrective RAG</span> routes by retrieval quality —
+        <h1 className="display text-3xl">Dev · CRAG Routing Game</h1>
+        <p className="text-charcoal/65 text-sm mt-1">
+          Naive RAG trusts retrieval blindly. <span className="text-mint-dark font-bold">Corrective RAG</span> routes by retrieval quality —
           internal when retrieval is good, web fallback when it&apos;s bad. Rebuild the router by dragging the thresholds.
         </p>
       </div>
-      <RagGame />
+      <Cabinet label="CRAG Routing">
+        <div className="p-3"><RagGame /></div>
+      </Cabinet>
     </div>
   );
 }

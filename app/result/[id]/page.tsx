@@ -5,6 +5,7 @@ import Explanation from "@/components/Explanation";
 import ConceptMap from "@/components/ConceptMap";
 import GameRouter from "@/components/game/GameRouter";
 import ListenButton from "@/components/ListenButton";
+import Cabinet from "@/components/Cabinet";
 
 export const dynamic = "force-dynamic";
 
@@ -17,8 +18,8 @@ export default async function ResultPage({ params }: { params: { id: string } })
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">{artifact.title}</h1>
-          <p className="text-gray-400 text-sm">{artifact.oneLiner}</p>
+          <h1 className="display text-3xl">{artifact.title}</h1>
+          <p className="text-charcoal/60 text-sm mt-1">{artifact.oneLiner}</p>
         </div>
         <div className="flex gap-2 items-center">
           <span className="tag">{artifact.category}</span>
@@ -32,24 +33,32 @@ export default async function ResultPage({ params }: { params: { id: string } })
       <section className="grid lg:grid-cols-2 gap-6">
         <div className="card p-5 space-y-3">
           <div className="flex items-center justify-between gap-2">
-            <h2 className="font-semibold text-accent2">Tier 1 · Understand</h2>
+            <h2 className="label text-sm font-bold text-mint-dark">Tier 1 · Understand</h2>
             <ListenButton text={artifact.summary + ". " + artifact.plainEnglish.join(". ")} />
           </div>
-          <p className="text-sm text-gray-300">{artifact.summary}</p>
+          <p className="text-sm text-charcoal/80">{artifact.summary}</p>
           <Explanation steps={artifact.plainEnglish} />
         </div>
-        <div className="card p-5">
-          <h2 className="font-semibold text-accent2 mb-3">Concept map</h2>
-          <ConceptMap nodes={artifact.concept.nodes} edges={artifact.concept.edges} />
+        <div>
+          <h2 className="label text-sm font-bold text-mint-dark mb-2">Concept map</h2>
+          <Cabinet label="Concept Map">
+            <div className="p-3">
+              <ConceptMap nodes={artifact.concept.nodes} edges={artifact.concept.edges} />
+            </div>
+          </Cabinet>
         </div>
       </section>
 
-      <section className="card p-5">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold text-accent2">Tier 2 & 3 · Play / Prove</h2>
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="label text-sm font-bold text-mint-dark">Tier 2 &amp; 3 · Play / Prove</h2>
           <span className="tag">template: {artifact.game.template} · conf {Math.round(artifact.game.confidence * 100)}%</span>
         </div>
-        <GameRouter game={artifact.game} />
+        <Cabinet label={artifact.game.template}>
+          <div className="p-4">
+            <GameRouter game={artifact.game} />
+          </div>
+        </Cabinet>
       </section>
     </div>
   );

@@ -48,14 +48,14 @@ export default function Upload() {
   return (
     <div className="card p-6 max-w-2xl mx-auto space-y-4">
       <label className="block">
-        <span className="text-sm text-gray-300">Upload a paper (PDF)</span>
+        <span className="label text-xs text-charcoal/80">▣ Upload a paper (PDF)</span>
         <input type="file" accept="application/pdf" disabled={busy}
           onChange={(e) => { const f = e.target.files?.[0]; if (f) { const fd = new FormData(); fd.append("file", f); send(fd); } }}
-          className="mt-2 block w-full text-sm text-gray-400 file:mr-3 file:rounded-lg file:border-0 file:bg-accent file:px-4 file:py-2 file:text-white" />
+          className="mt-2 block w-full text-sm text-charcoal/70" />
       </label>
 
-      <div className="flex items-center gap-3 text-xs text-gray-500">
-        <div className="h-px bg-edge flex-1" /> or paste a URL <div className="h-px bg-edge flex-1" />
+      <div className="flex items-center gap-3 label text-[0.6rem] text-charcoal/50">
+        <div className="h-[2px] bg-charcoal/15 flex-1" /> or paste a URL <div className="h-[2px] bg-charcoal/15 flex-1" />
       </div>
 
       <div className="flex gap-2">
@@ -65,10 +65,10 @@ export default function Upload() {
           value={urlInput}
           onChange={(e) => setUrlInput(e.target.value)}
           disabled={busy}
-          className="flex-1 rounded-lg border border-edge bg-ink/60 px-3 py-2 text-sm text-gray-200 placeholder:text-gray-600 focus:border-accent focus:outline-none"
+          className="flex-1 rounded-lg border-[1.5px] border-charcoal bg-paper px-3 py-2 text-sm text-charcoal placeholder:text-charcoal/40 focus:border-coral focus:outline-none"
         />
         <button
-          className="btn-primary px-4 py-2 text-sm shrink-0"
+          className="btn-primary px-4 py-2 text-xs shrink-0"
           disabled={busy || !urlInput.trim()}
           onClick={fetchUrl}
         >
@@ -76,8 +76,8 @@ export default function Upload() {
         </button>
       </div>
 
-      <div className="flex items-center gap-3 text-xs text-gray-500">
-        <div className="h-px bg-edge flex-1" /> or <div className="h-px bg-edge flex-1" />
+      <div className="flex items-center gap-3 label text-[0.6rem] text-charcoal/50">
+        <div className="h-[2px] bg-charcoal/15 flex-1" /> or <div className="h-[2px] bg-charcoal/15 flex-1" />
       </div>
 
       <div className="flex flex-wrap gap-3 justify-center">
@@ -88,16 +88,16 @@ export default function Upload() {
 
       {busy && (
         <div className="space-y-2">
-          <p className="text-sm text-accent2 text-center animate-pulse">{STEPS[step]}</p>
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-edge">
+          <p className="label text-xs text-mint-dark text-center animate-pulse">{STEPS[step]}</p>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-charcoal/15 border border-charcoal/30">
             <div
-              className="h-full bg-accent2 transition-all duration-500"
+              className="h-full bg-mint transition-all duration-500"
               style={{ width: `${((step + 1) / STEPS.length) * 100}%` }}
             />
           </div>
         </div>
       )}
-      {err && <p className="text-sm text-bad text-center">{err}</p>}
+      {err && <p className="label text-xs text-coral-dark text-center">{err}</p>}
     </div>
   );
 }
