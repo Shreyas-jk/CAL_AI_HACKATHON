@@ -25,6 +25,10 @@ export const TEMPLATES: TemplateMeta[] = [
     categories: ["epidemic", "sir", "diffusion", "spread", "graph"],
     blurb: "Set interventions to keep infections under threshold. A strategy mini-game.",
     fullyPlayable: false },
+  { id: "vision-detective", title: "Vision Detective (grounded VLM lab)",
+    categories: ["multimodal", "vision-language", "vision language", "vlm", "vqa", "clip", "ocr", "document understanding", "grounding", "visual hallucination"],
+    blurb: "Interrogate a vision-language model with yes/no questions, then ground answers in visual evidence before it hallucinates.",
+    fullyPlayable: true },
 ];
 
 export function pickTemplate(category: string): GameTemplateId {

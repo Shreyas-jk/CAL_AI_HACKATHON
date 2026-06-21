@@ -18,6 +18,7 @@ Cal Hacks AI Hackathon 2026 (track: *Ddoski's Lab*).
 | Spotlight (uniform vs learned attention) | attention / transformer / NLP | ✅ fully playable |
 | Survivor (policy vs reward shaping) | reinforcement learning | ▶ playable shell |
 | Flatten It (intervention strategy) | epidemic / spread | ▶ playable shell |
+| Vision Detective (grounded VLM lab) | multimodal / vision-language / OCR / grounding | ✅ fully playable |
 
 New templates: add a component under `components/game/templates/`, register it in
 `lib/templates.ts`, and route it in `components/game/GameRouter.tsx`.
