@@ -81,13 +81,16 @@ export function createGame(Phaser: typeof PhaserNS, parent: HTMLElement, opts: G
         this.children.bringToTop(obj);
         const id = obj.getData("id") as SessionId;
         this.selected = id;
-        this.tweens.add({ targets: this.inners[id], scale: 1.14, duration: 120, ease: "Back.out" });
+        // grab feels bigger so the picked-up talk reads clearly
+        this.tweens.add({ targets: this.inners[id], scale: 1.45, duration: 120, ease: "Back.out" });
         this.renderCard();
       });
-      this.input.on("drag", (_p: any, obj: any, dragX: number, dragY: number) => {
+      this.input.on("drag", (p: any, obj: any) => {
         if (this.paused) return;
-        obj.x = dragX;
-        obj.y = dragY;
+        // anchor the token CENTER to the pointer so the icon sits under the cursor
+        // and the drop lands exactly where the user sees it (no grab-offset).
+        obj.x = p.x;
+        obj.y = p.y;
       });
       this.input.on("dragend", (p: any, obj: any) => {
         if (this.paused) return;

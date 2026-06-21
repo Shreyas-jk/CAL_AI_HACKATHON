@@ -27,12 +27,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </header>
 
         <main className="mx-auto max-w-6xl px-6 py-10">{children}</main>
-
-        <footer className="mx-auto max-w-6xl px-6 py-10 mt-6 border-t-2 border-charcoal/20">
-          <p className="label text-[0.7rem] text-charcoal/60">
-            ✦ Powered by Claude · Redis · Arize — Make papers playable.
-          </p>
-        </footer>
       </body>
     </html>
   );

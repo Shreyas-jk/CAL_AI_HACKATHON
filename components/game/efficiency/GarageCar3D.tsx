@@ -20,14 +20,18 @@ const HOTSPOTS: { id: PartId; label: string; icon: string; pos: [number, number,
   { id: "cooling", label: "Cooling", icon: "❄️", pos: [-1.35, 0.95, 0.5] },
 ];
 
+// Uniformly enlarge the car + its anchored part tags as one group so the markers
+// stay glued to their parts. ~+38% bigger than before (was bare scale 1.4).
+const CAR_GROUP_SCALE = 1.38;
+
 function Marker({ h, selected, best, onSelect }: {
   h: (typeof HOTSPOTS)[number]; selected: boolean; best: boolean; onSelect: (p: PartId) => void;
 }) {
   return (
-    <Html position={h.pos} center distanceFactor={3.25} zIndexRange={[20, 0]}>
+    <Html position={h.pos} center distanceFactor={3.9} zIndexRange={[20, 0]}>
       <button
         onClick={(e) => { e.stopPropagation(); onSelect(h.id); }}
-        className={"flex items-center gap-0.5 whitespace-nowrap rounded-full border px-1.5 py-0.5 text-[10px] font-semibold shadow-md transition " +
+        className={"flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[12px] font-semibold shadow-md transition " +
           (selected ? "border-accent2 bg-accent2 text-ink" : "border-edge bg-ink/85 text-gray-200 hover:border-accent2")}
       >
         <span>{h.icon}</span>
@@ -48,13 +52,15 @@ function Scene(p: GarageCar3DProps) {
       {/* soft grounding shadow only — no turntable disc (that read as a black ring) */}
       <ContactShadows position={[0, 0, 0]} opacity={0.32} scale={11} blur={3} far={4} />
 
-      <CarModel color={p.carColor ?? "#7c5cff"} scale={1.4} />
+      {/* car + part tags scale together so the tags stay anchored to their parts */}
+      <group scale={CAR_GROUP_SCALE}>
+        <CarModel color={p.carColor ?? "#7c5cff"} scale={1.4} />
+        {HOTSPOTS.map((h) => (
+          <Marker key={h.id} h={h} selected={p.selected === h.id} best={p.best[h.id]} onSelect={p.onSelect} />
+        ))}
+      </group>
 
-      {HOTSPOTS.map((h) => (
-        <Marker key={h.id} h={h} selected={p.selected === h.id} best={p.best[h.id]} onSelect={p.onSelect} />
-      ))}
-
-      <OrbitControls target={[0, 0.8, 0]} enablePan={false} enableZoom={false}
+      <OrbitControls target={[0, 0.8 * CAR_GROUP_SCALE, 0]} enablePan={false} enableZoom={false}
         minPolarAngle={0.7} maxPolarAngle={1.45} autoRotate autoRotateSpeed={0.5} />
     </>
   );

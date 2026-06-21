@@ -178,9 +178,13 @@ export default function Reasoning({ game }: { game: PaperArtifact["game"] }) {
   const [runId, setRunId] = useState(0);
   const [previewId, setPreviewId] = useState(1);
   const [aiPaused, setAiPaused] = useState(false);
+  // The AI board starts UNSOLVED at load; it only populates once the AI actually
+  // reasons (Run reasoning, or choosing a strategy via the baseline/powerup toggle).
+  const [hasRun, setHasRun] = useState(false);
 
   const preset = useCallback((power: boolean) => {
     setUsePowerup(power);
+    setHasRun(true);
     setAiPaused(false);
     setPreviewId(1);
     if (power) {
@@ -254,9 +258,9 @@ export default function Reasoning({ game }: { game: PaperArtifact["game"] }) {
       score={"score " + result.finalScore + " · selected " + result.selected.passed + "/8 · compute " + result.computeUsed}
       status={status}
       onReset={() => {
+        setHasRun(false);
         setAiPaused(false);
         setPreviewId(1);
-        setRunId((r) => r + 1);
       }}
     >
       <div className="space-y-5">
@@ -280,6 +284,7 @@ export default function Reasoning({ game }: { game: PaperArtifact["game"] }) {
               paused={aiPaused}
               onPause={() => setAiPaused((p) => !p)}
               themed={themed}
+              revealed={hasRun}
             />
           </PuzzlePanel>
         </section>
@@ -325,6 +330,7 @@ export default function Reasoning({ game }: { game: PaperArtifact["game"] }) {
                 }}
               />
               <button className="btn-primary w-full py-1.5" onClick={() => {
+                setHasRun(true);
                 setAiPaused(false);
                 setPreviewId(1);
                 setRunId((r) => r + 1);
@@ -386,39 +392,47 @@ function PuzzlePanel({ title, meta, detail, children }: { title: string; meta: s
   );
 }
 
+const EMPTY_SCHEDULE: Assignment = {};
+
 function AiConferenceBoard({
   attempt,
   selectedId,
   paused,
   onPause,
   themed,
+  revealed,
 }: {
   attempt: Attempt;
   selectedId: number;
   paused: boolean;
   onPause: () => void;
   themed: ReturnType<typeof parseTheme>;
+  revealed: boolean;
 }) {
-  const constraints = check(attempt.schedule);
-  const happy = happyCount(attempt.schedule);
-  const selected = SESSION_IDS.find((id) => attempt.schedule[id]);
+  // Before the AI runs, the board is UNSOLVED — empty seats, no placements.
+  const schedule = revealed ? attempt.schedule : EMPTY_SCHEDULE;
+  const constraints = check(schedule);
+  const happy = happyCount(schedule);
+  const selected = SESSION_IDS.find((id) => schedule[id]);
   const selectedDef = selected ? sessionById(selected) : null;
-  const selectedWishes = selected ? wishStatus(attempt.schedule, selected) : [];
+  const selectedWishes = selected ? wishStatus(schedule, selected) : [];
 
   return (
     <ScaledStage>
         <div className="absolute inset-0 bg-[#f2e8d5]" />
         <div className="absolute inset-0 opacity-35 [background-image:radial-gradient(#ffffff_1.5px,transparent_1.5px)] [background-size:38px_31px]" />
-        <button
-          onClick={onPause}
-          aria-label={paused ? "Play reasoning preview" : "Pause reasoning preview"}
-          className="absolute left-[24px] top-[24px] z-20 grid h-[48px] w-[48px] place-items-center rounded-full border-[4px] border-[#4a3f35] bg-[#e39aa0] text-[24px] font-black leading-none text-[#4a3f35] transition hover:scale-105"
-        >
-          {paused ? ">" : "II"}
-        </button>
+        {revealed && (
+          <button
+            onClick={onPause}
+            aria-label={paused ? "Play reasoning preview" : "Pause reasoning preview"}
+            className="absolute left-[24px] top-[24px] z-20 grid h-[48px] w-[48px] place-items-center rounded-full border-[4px] border-[#4a3f35] bg-[#e39aa0] text-[24px] font-black leading-none text-[#4a3f35] transition hover:scale-105"
+          >
+            {paused ? ">" : "II"}
+          </button>
+        )}
 
         <div className="absolute left-[372px] top-[30px] flex h-[40px] w-[536px] items-center justify-center rounded-full border-[3px] border-[#e39aa0] bg-[#fffaf0] px-8 text-center text-[17px] font-black leading-tight text-[#6f6151]">
-          AI samples schedules; the verifier picks the best.
+          {revealed ? "AI samples schedules; the verifier picks the best." : "Press “Run reasoning” to watch the AI solve it."}
         </div>
 
         <div className="absolute left-[1004px] top-[24px] w-[244px] rounded-[16px] border-[4px] border-[#4a3f35] bg-[#fffaf0] p-[10px] text-center">
@@ -440,7 +454,7 @@ function AiConferenceBoard({
                   <span className="text-[11px] font-bold leading-tight text-[#6f6151]">{room.name}</span>
                 </div>
                 {SLOTS.map((_, slot) => (
-                  <AiSeat key={room.id + slot} room={room.id} slot={slot} schedule={attempt.schedule} short={themed.short} />
+                  <AiSeat key={room.id + slot} room={room.id} slot={slot} schedule={schedule} short={themed.short} />
                 ))}
               </div>
             ))}
@@ -482,12 +496,10 @@ function AiConferenceBoard({
           </div>
         </div>
 
-        <div className="absolute left-[300px] top-[594px] flex w-[690px] justify-around">
-          {SESSION_IDS.map((id) => <AiHomeGuest key={id} id={id} schedule={attempt.schedule} short={themed.short} />)}
-        </div>
-
-        <div className="absolute left-[485px] top-[671px] flex h-[34px] w-[310px] items-center justify-center rounded-full border-2 border-[#4a3f35] bg-[#fffaf0] px-4 text-[13px] font-black text-[#6f6151]">
-          Attempt {attempt.id} · {attempt.passed}/8 checks · {happy}/6 happy
+        <div className="absolute left-[485px] top-[632px] flex h-[34px] w-[310px] items-center justify-center rounded-full border-2 border-[#4a3f35] bg-[#fffaf0] px-4 text-[13px] font-black text-[#6f6151]">
+          {revealed
+            ? `Attempt ${attempt.id} · ${attempt.passed}/8 checks · ${happy}/6 happy`
+            : "Unsolved · waiting to reason"}
         </div>
     </ScaledStage>
   );
@@ -525,20 +537,6 @@ function AiPlacedGuest({ id, schedule, short }: { id: SessionId; schedule: Assig
         {def.emoji}
       </div>
       <div className="max-w-[96px] truncate rounded-full bg-[#fffaf0] px-2 text-[11px] font-black">{short[id]}</div>
-    </div>
-  );
-}
-
-function AiHomeGuest({ id, schedule, short }: { id: SessionId; schedule: Assignment; short: Record<SessionId, string> }) {
-  if (schedule[id]) return <div className="w-[11%]" />;
-  const def = sessionById(id);
-  const fill = "#" + def.color.toString(16).padStart(6, "0");
-  return (
-    <div className="flex w-[96px] flex-col items-center gap-1">
-      <div className="grid h-[56px] w-[56px] place-items-center rounded-[18px] border-[3px] border-[#4a3f35] text-[22px]" style={{ backgroundColor: fill }}>
-        {def.emoji}
-      </div>
-      <div className="max-w-full truncate rounded-full bg-[#fffaf0] px-2 text-[11px] font-black">{short[id]}</div>
     </div>
   );
 }

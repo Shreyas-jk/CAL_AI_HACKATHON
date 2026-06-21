@@ -16,8 +16,8 @@ const BELT_Y = 0.4;
 const FRONT_X = -1.4;     // feed queue front (next to junction)
 const QSTEP = 1.7;        // queued-box spacing (back-up grows -X = congestion)
 const BOX_TINT = "#e6b77c";
-const FLOOR = "#d3ccbd";
-const FEED_TINT = "#9a9aa2";
+const FLOOR = "#474d5b";       // concrete factory floor (cool grey, reads on the dark cabinet)
+const FEED_TINT = "#9a9aa2";   // neutral machinery grey — ALL belts use this so they read physical
 
 interface Cell { pos: [number, number, number]; rotY: number; }
 interface Branch {
@@ -97,19 +97,32 @@ function Scene({ world, doRoute, selectPkt, auto }: { world: World; doRoute: (a:
       <directionalLight position={[8, 28, 12]} intensity={2.4} color="#fff3d6" />
       <ambientLight intensity={0.65} color="#fff7ee" />
 
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[1, 0, -0.5]}>
-        <planeGeometry args={[46, 30]} />
+      {/* factory floor: concrete slab + faint metal grid so the belts sit on ground */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[1, -0.02, -0.5]} receiveShadow>
+        <planeGeometry args={[48, 32]} />
         <meshStandardMaterial color={FLOOR} flatShading />
       </mesh>
-      <ContactShadows position={[1, 0.02, -0.5]} scale={44} blur={3} far={16} opacity={0.42} color="#5b513f" resolution={1024} />
+      <gridHelper args={[48, 32, "#5a6172", "#3c4250"]} position={[1, 0.0, -0.5]} />
+      {/* low back wall gives the line a room instead of a void */}
+      <mesh position={[1, 2.2, -12]} receiveShadow>
+        <boxGeometry args={[48, 5, 0.6]} />
+        <meshStandardMaterial color="#2b303c" flatShading />
+      </mesh>
+      <ContactShadows position={[1, 0.02, -0.5]} scale={44} blur={3} far={16} opacity={0.42} color="#0c0e14" resolution={1024} />
 
-      {/* FEED belt into the junction */}
+      {/* FEED belt into the junction + its source machine */}
+      <KModel url={KENNEY.machine} position={[-11.4, 0, 0]} flatColor="#878c97" />
       {[-1, -3, -5, -7, -9].map((x) => <KModel key={x} url={KENNEY.conveyor} position={[x, 0, 0]} flatColor={FEED_TINT} />)}
 
-      {/* branches: belts (with corners), bins, signs, stamps */}
+      {/* branches: grey physical belts + colored side-rails (the per-lane accent), bins, signs, stamps */}
       {BRANCHES.map((b) => (
         <group key={b.action}>
-          {b.cells.map((c, i) => <KModel key={i} url={KENNEY.conveyor} position={c.pos} rotation={[0, c.rotY, 0]} flatColor={b.beltColor} />)}
+          {b.cells.map((c, i) => (
+            <group key={i}>
+              <KModel url={KENNEY.conveyor} position={c.pos} rotation={[0, c.rotY, 0]} flatColor={FEED_TINT} />
+              <LaneRails pos={c.pos} rotY={c.rotY} color={b.color} />
+            </group>
+          ))}
           <KModel url={KENNEY.bin} position={b.bin} flatColor={b.binColor} />
           <ChuteSign b={b} busy={!!world.lanes[b.action].busy} clickable={!auto} onRoute={() => doRoute(b.action)} />
           <BinStamp b={b} last={world.lanes[b.action].busy ? null : world.lanes[b.action].last} />
@@ -118,6 +131,22 @@ function Scene({ world, doRoute, selectPkt, auto }: { world: World; doRoute: (a:
 
       <Arm world={world} />
       <Packages world={world} selectPkt={selectPkt} auto={auto} />
+    </>
+  );
+}
+
+// Colored side-rails flanking a grey belt segment — the per-lane accent (green/
+// amber/red trim) that reads as a real conveyor's side frames, not a floor zone.
+function LaneRails({ pos, rotY, color }: { pos: [number, number, number]; rotY: number; color: string }) {
+  const alongX = Math.abs(rotY) < 0.01; // belt runs along X (else along Z)
+  const off = 0.64;
+  const args: [number, number, number] = alongX ? [1.85, 0.26, 0.12] : [0.12, 0.26, 1.85];
+  const a: [number, number, number] = alongX ? [pos[0], 0.15, pos[2] - off] : [pos[0] - off, 0.15, pos[2]];
+  const b: [number, number, number] = alongX ? [pos[0], 0.15, pos[2] + off] : [pos[0] + off, 0.15, pos[2]];
+  return (
+    <>
+      <mesh position={a} castShadow><boxGeometry args={args} /><meshStandardMaterial color={color} flatShading metalness={0} roughness={0.9} /></mesh>
+      <mesh position={b} castShadow><boxGeometry args={args} /><meshStandardMaterial color={color} flatShading metalness={0} roughness={0.9} /></mesh>
     </>
   );
 }
