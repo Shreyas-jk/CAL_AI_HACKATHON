@@ -1,4 +1,4 @@
-import { askJson, hasClaude } from "./claude";
+import { askJson, hasChatLLM } from "./claude";
 import { getTemplateSpec } from "./templateSpecs";
 import type { GameTemplateId } from "./types";
 
@@ -92,7 +92,7 @@ export async function customizeGame(
   category: string,
   methodSection: string,
 ): Promise<Record<string, unknown>> {
-  if (!hasClaude()) return {};
+  if (!hasChatLLM()) return {};
   if (template === "none") return {};
 
   const prompt = buildCustomizePrompt(template, summary, category, methodSection);

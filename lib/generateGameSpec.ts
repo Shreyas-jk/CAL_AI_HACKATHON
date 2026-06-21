@@ -1,4 +1,4 @@
-import { askJson, hasClaude } from "./claude";
+import { askJson, hasChatLLM } from "./claude";
 
 const SYSTEM_PROMPT = `You generate a GameSpec JSON for a research paper game. The GameSpec describes a unique playable game whose mechanics teach the paper's core contribution. It is PURE DATA — a renderer interprets it. No functions, no executable strings.
 
@@ -146,7 +146,7 @@ export async function generateGameSpec(
   category: string,
   methodSection: string,
 ): Promise<Record<string, unknown>> {
-  if (!hasClaude()) return {};
+  if (!hasChatLLM()) return {};
 
   const user = [
     `PAPER CATEGORY: ${category}`,

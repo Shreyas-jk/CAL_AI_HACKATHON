@@ -10,20 +10,43 @@ function getClient(): Anthropic {
   return client;
 }
 
-// Ask Claude and parse a JSON object out of the response. Throws if no key.
-export async function askJson<T>(system: string, user: string, maxTokens?: number): Promise<T> {
-  if (!hasClaude()) throw new Error("ANTHROPIC_API_KEY not set");
-  const msg = await getClient().messages.create({
-    model: MODEL,
-    max_tokens: maxTokens ?? 2000,
-    system,
-    messages: [{ role: "user", content: user }],
-  });
-  const text = msg.content.map((c) => (c.type === "text" ? c.text : "")).join("\n");
+function extractJson<T>(text: string): T {
   const start = text.indexOf("{");
   const end = text.lastIndexOf("}");
-  if (start === -1 || end === -1) throw new Error("No JSON in Claude response");
+  if (start === -1 || end === -1) throw new Error("No JSON in model response");
   return JSON.parse(text.slice(start, end + 1)) as T;
+}
+
+/**
+ * Ask the model for a JSON object and parse it. Prefers Anthropic
+ * (claude-sonnet-4-6); falls back to OpenAI when only OPENAI_API_KEY is set, so
+ * the extract/classify/explain pipeline runs on whichever provider is configured.
+ * Throws if no key.
+ */
+export async function askJson<T>(system: string, user: string, maxTokens?: number): Promise<T> {
+  if (process.env.ANTHROPIC_API_KEY) {
+    const msg = await getClient().messages.create({
+      model: MODEL,
+      max_tokens: maxTokens ?? 2000,
+      system,
+      messages: [{ role: "user", content: user }],
+    });
+    const text = msg.content.map((c) => (c.type === "text" ? c.text : "")).join("\n");
+    return extractJson<T>(text);
+  }
+  if (process.env.OPENAI_API_KEY) {
+    const OpenAI = (await import("openai")).default;
+    const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const model = process.env.OPENAI_MODEL || "gpt-4o";
+    const r = await client.chat.completions.create({
+      model,
+      temperature: 0,
+      max_tokens: maxTokens ?? 2000,
+      messages: [{ role: "system", content: system }, { role: "user", content: user }],
+    });
+    return extractJson<T>(r.choices[0]?.message?.content || "");
+  }
+  throw new Error("No LLM API key set (ANTHROPIC_API_KEY or OPENAI_API_KEY)");
 }
 
 export type ChatMessage = { role: "user" | "assistant"; content: string };

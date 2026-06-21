@@ -1,5 +1,5 @@
 import * as Sentry from "@sentry/nextjs";
-import { askJson, hasClaude } from "./claude";
+import { askJson, hasChatLLM } from "./claude";
 import { chunkSections } from "./chunk";
 import { pickTemplate } from "./templates";
 import { scoreEval, logToArize, logGameSpecEval } from "./arize";
@@ -28,7 +28,7 @@ const SYS_EXPLAIN = "JSON only: {plainEnglish: string[4-6], concept:{nodes:[{id,
 
 export async function buildArtifact(id: string, rawText: string, fallbackTitle?: string): Promise<PaperArtifact> {
   return Sentry.startSpan({ name: "buildArtifact", op: "pipeline" }, async () => {
-  if (!hasClaude() || !rawText || rawText.length < 200) {
+  if (!hasChatLLM() || !rawText || rawText.length < 200) {
     return mockArtifact(id, fallbackTitle);
   }
   try {
@@ -54,12 +54,20 @@ export async function buildArtifact(id: string, rawText: string, fallbackTitle?:
       content = await customizeGame(template, ex.summary, ex.category, methodText);
     }
 
-    const ev = scoreEval(rawText, { summary: ex.summary, plainEnglish: exp.plainEnglish });
+    // Harden against provider output variance (e.g. plainEnglish returned as a
+    // string, or a malformed concept) so consumers (result page, chat) never crash.
+    const plainEnglish = Array.isArray(exp.plainEnglish) ? exp.plainEnglish : [];
+    const concept =
+      exp.concept && Array.isArray(exp.concept.nodes) && Array.isArray(exp.concept.edges)
+        ? exp.concept
+        : { nodes: [], edges: [] };
+
+    const ev = scoreEval(rawText, { summary: ex.summary, plainEnglish });
 
     const artifact: PaperArtifact = {
       id, title: ex.title || fallbackTitle || "Untitled paper",
       category: ex.category, oneLiner: ex.oneLiner, summary: ex.summary,
-      plainEnglish: exp.plainEnglish || [], concept: exp.concept || { nodes: [], edges: [] },
+      plainEnglish, concept,
       game: {
         template, confidence: cl.confidence ?? 0.6, goal: cl.goal || "Beat the challenge.",
         baselineLabel: cl.baselineLabel || "Naive baseline", powerupLabel: cl.powerupLabel || "Paper's method",

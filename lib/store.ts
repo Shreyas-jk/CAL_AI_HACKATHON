@@ -6,11 +6,12 @@ const CATEGORY_KEY = (cat: string) => "papertrail:category:" + cat.toLowerCase()
 const PAPER_KEY = (id: string) => "papertrail:paper:" + id;
 const TTL_SEC = 60 * 60 * 24 * 7; // 7 days — matches the artifact TTL
 const MAX_PAPER_CHARS = 200_000;  // guard; a full paper still fits Sonnet 4.6's window
-const mem = new Map<string, PaperArtifact>();
-// Pin to globalThis so the in-memory paper-text store is shared across Next route
-// bundles in one process (without this, /api/extract and /api/chat get separate
-// Map instances and text saved at intake isn't visible to chat unless Redis is set).
-const g = globalThis as unknown as { __paperMem?: Map<string, string> };
+// Pin to globalThis so the in-memory stores are shared across Next route bundles
+// in one process. Without this, /api/extract, the result page, and /api/chat each
+// get separate Map instances — so a classified artifact (or saved paper text) isn't
+// visible to the page/chat and they fall back to the mock demo, unless Redis is set.
+const g = globalThis as unknown as { __artifactMem?: Map<string, PaperArtifact>; __paperMem?: Map<string, string> };
+const mem: Map<string, PaperArtifact> = g.__artifactMem ?? (g.__artifactMem = new Map());
 const paperMem: Map<string, string> = g.__paperMem ?? (g.__paperMem = new Map());
 
 /**
