@@ -6,7 +6,17 @@ import { mockArtifact } from "./mockData";
 import type { PaperArtifact, GameTemplateId } from "./types";
 
 const SYS_EXTRACT = "You convert research-paper text into JSON only: {title, category, oneLiner, summary}. category is a short lowercase phrase.";
-const SYS_CLASSIFY = "Pick a game template id from: pathfinding|attention|gridworld-rl|epidemic|vision-detective|none. Use vision-detective for multimodal vision-language, VQA, OCR/document understanding, CLIP-style image-text, grounding, or visual hallucination papers. JSON only: {template, confidence, goal, baselineLabel, powerupLabel, claim, params}.";
+const SYS_CLASSIFY = [
+  "Pick the best game template id for this paper from: pathfinding | attention | fine-tuning-alignment | reasoning | vision-detective | none.",
+  "- pathfinding: search, planning, A*/heuristics, graph traversal, maze/navigation, route optimization.",
+  "- attention: transformer attention, self-attention, sequence/NLP, coreference, what tokens a model focuses on.",
+  "- fine-tuning-alignment: fine-tuning, RLHF, DPO, preference optimization, reward modeling, alignment, policy drift / reward hacking.",
+  "- reasoning: chain-of-thought, test-time compute, best-of-N sampling, verifiers/voting, multi-step or constraint-satisfaction reasoning, planning puzzles.",
+  "- vision-detective: multimodal vision-language, VQA, OCR/document understanding, CLIP-style image-text, grounding, visual hallucination.",
+  "- none: anything that fits none of the above.",
+  "Prefer a real template when the paper plausibly fits; use none only when nothing matches.",
+  "JSON only: {template, confidence, goal, baselineLabel, powerupLabel, claim, params}. params are primitive knobs for the template; for vision-detective prefer params {lesson, methodName, paperClaim}.",
+].join("\n");
 const SYS_EXPLAIN = "JSON only: {plainEnglish: string[4-6], concept:{nodes:[{id,label,group}], edges:[{source,target,label}]}}.";
 
 export async function buildArtifact(id: string, rawText: string, fallbackTitle?: string): Promise<PaperArtifact> {
