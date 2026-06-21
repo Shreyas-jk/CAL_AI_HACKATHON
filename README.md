@@ -1,4 +1,4 @@
-# PaperTrail AI — Make papers playable
+# Neural Arcade: Make papers playable
 
 Turn dense ML/AI research papers into **interactive, playable experiments**. Built for the
 Cal Hacks AI Hackathon 2026 (track: *Ddoski's Lab*).
