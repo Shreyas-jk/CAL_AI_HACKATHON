@@ -225,3 +225,55 @@ export const MOCK_ARTIFACTS: Partial<Record<Exclude<GameTemplateId, "none">, Pap
 export function mockArtifact(id: string, title?: string): PaperArtifact {
   return { ...PATHFINDING, id, title: title || PATHFINDING.title };
 }
+
+export function mockReasoning(id: string, title?: string): PaperArtifact {
+  return {
+    id,
+    title: title || "Scaling Test-Time Compute for Reasoning (demo paper)",
+    category: "reasoning / chain-of-thought",
+    oneLiner: "Spend more compute at inference — sample many chains, verify, and vote — to solve multi-step puzzles.",
+    summary:
+      "Instead of training a bigger model, the paper scales compute at inference time: generate many " +
+      "candidate reasoning chains (best-of-N), score them with a verifier, and aggregate via voting. " +
+      "A single greedy chain often fails multi-step constraint problems; sampling + verification + " +
+      "voting reliably recovers the correct solution under a fixed compute budget.",
+    plainEnglish: [
+      "Hard puzzles need several reasoning steps that all must line up.",
+      "One quick attempt usually breaks at least one constraint.",
+      "So the model makes many attempts (best-of-N) instead of one.",
+      "A verifier scores each attempt; voting picks the best-supported answer.",
+      "More attempts cost more compute — so there's a budget trade-off.",
+    ],
+    concept: {
+      nodes: [
+        { id: "prob", label: "Multi-step Puzzle", group: "core" },
+        { id: "single", label: "Single Sample", group: "baseline" },
+        { id: "bon", label: "Best-of-N Sampling", group: "contribution" },
+        { id: "verify", label: "Verifier", group: "contribution" },
+        { id: "vote", label: "Voting", group: "contribution" },
+        { id: "budget", label: "Compute Budget", group: "constraint" },
+        { id: "sol", label: "Correct Solution", group: "outcome" },
+      ],
+      edges: [
+        { source: "prob", target: "single", label: "naive" },
+        { source: "single", target: "sol", label: "often fails" },
+        { source: "prob", target: "bon", label: "scale compute" },
+        { source: "bon", target: "verify", label: "score" },
+        { source: "verify", target: "vote", label: "weight" },
+        { source: "vote", target: "sol", label: "selects" },
+        { source: "budget", target: "bon", label: "limits" },
+      ],
+    },
+    game: {
+      template: "reasoning",
+      confidence: 0.9,
+      goal: "Schedule all 6 sessions so all 8 constraints pass — under the compute budget.",
+      baselineLabel: "Single-shot (1 attempt)",
+      powerupLabel: "Best-of-N + Verifier + Voting",
+      claim: "Paper claim: scaling test-time compute (samples + verifier + voting) finds correct multi-step solutions a single sample misses.",
+      params: { sessions: 6, rooms: 3, slots: 4, constraints: 8 },
+    },
+    eval: { faithfulness: 0.8, hallucinationRisk: 0.2, note: "grounded (demo)" },
+    source: "mock",
+  };
+}

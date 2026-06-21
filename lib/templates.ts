@@ -27,6 +27,10 @@ export const TEMPLATES: TemplateMeta[] = [
     categories: ["epidemic", "sir", "diffusion", "spread", "graph"],
     blurb: "Set interventions to keep infections under threshold. A strategy mini-game.",
     fullyPlayable: false },
+  { id: "reasoning", title: "AI Conference Scheduler (test-time compute)",
+    categories: ["reasoning", "chain-of-thought", "chain of thought", "cot", "test-time", "planning", "constraint"],
+    blurb: "Solve a 6-session scheduling puzzle. A single sample fails; best-of-N + verifier + voting under a compute budget finds the 8/8 solution.",
+    fullyPlayable: true },
 ];
 export function pickTemplate(category: string): GameTemplateId {
   const c = (category || "").toLowerCase();
